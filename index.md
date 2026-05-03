@@ -1,4 +1,7 @@
-# 📚 TP Terraform
+---
+title: "📚 TP Terraform"
+layout: home
+---
 
 Bienvenue dans les travaux pratiques Terraform.
 
