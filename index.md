@@ -11,5 +11,5 @@ Bienvenue dans les travaux pratiques Terraform.
 
 {% assign tp_pages = site.pages | where_exp: "p", "p.dir == '/tp/'" | sort: "name" %}
 {% for tp in tp_pages %}
-- [{{ tp.title }}]({{ tp.url }})
+- [{{ tp.title }}]({{ tp.url | relative_url }})
 {% endfor %}
