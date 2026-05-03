@@ -1,0 +1,17 @@
+title: "TP Terraform"
+description: "Travaux pratiques Terraform"
+theme: minima
+
+markdown: kramdown
+
+collections:
+  tp:
+    output: true
+    permalink: /:collection/:name/
+
+defaults:
+  - scope:
+      path: ""
+      type: "tp"
+    values:
+      layout: "tp"

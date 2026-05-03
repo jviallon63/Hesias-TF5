@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ page.title }}</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+
+<body>
+<div class="container">
+
+  <h1>🧪 {{ page.title }}</h1>
+
+  {% if page.objective %}
+  <div class="section objective">
+    <h2>🎯 Objectif</h2>
+    <p>{{ page.objective }}</p>
+  </div>
+  {% endif %}
+
+  {{ content }}
+
+  <hr>
+
+  <p><a href="/">⬅️ Retour à l'accueil</a></p>
+
+</div>
+</body>
+</html>
