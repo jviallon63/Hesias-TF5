@@ -1,6 +1,15 @@
 <header class="site-header" role="banner">
   <div class="wrapper">
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">
+      <!-- Terraform logo (4 parallelograms forming 2 offset diamonds) -->
+      <svg class="tf-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 244" aria-hidden="true">
+        <polygon fill="#9B72CF" points="160,0 96,36 96,108 160,72"/>
+        <polygon fill="#7B42BC" points="160,0 224,36 224,108 160,72"/>
+        <polygon fill="#9B72CF" points="96,136 32,172 32,244 96,208"/>
+        <polygon fill="#7B42BC" points="96,136 160,172 160,244 96,208"/>
+      </svg>
+      {{ site.title | escape }}
+    </a>
 
     <nav class="site-nav">
       <input type="checkbox" id="nav-trigger" class="nav-trigger" />

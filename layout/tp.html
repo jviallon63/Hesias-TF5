@@ -2,26 +2,32 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>{{ page.title }}</title>
-  <link rel="stylesheet" href="/assets/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title }} — {{ site.title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ "/assets/style.css" | relative_url }}">
 </head>
 
 <body>
-<div class="container">
+  {% include header.html %}
 
-  <h1>🧪 {{ page.title }}</h1>
+  <main class="container">
 
-  {% if page.objective %}
-  <div class="section objective">
-    <h2>🎯 Objectif</h2>
-    <p>{{ page.objective }}</p>
-  </div>
-  {% endif %}
+    <h1>{{ page.title }}</h1>
 
-  {{ content }}
+    {% if page.objective %}
+    <div class="section objective">
+      <h2>🎯 Objectif</h2>
+      <p>{{ page.objective }}</p>
+    </div>
+    {% endif %}
 
-  <hr>
+    {{ content }}
 
-</div>
+  </main>
+
+  {% include footer.html %}
 </body>
 </html>

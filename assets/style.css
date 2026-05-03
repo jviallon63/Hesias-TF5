@@ -1,54 +1,269 @@
-body {
-  font-family: "Segoe UI", sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
-  margin: 0;
+/* ============================================
+   TERRAFORM BRAND DESIGN SYSTEM
+   Colors: https://www.terraform.io
+   Primary: #7B42BC  Dark: #4040B2
+   ============================================ */
+
+:root {
+  --tf-purple:       #7B42BC;
+  --tf-dark-purple:  #4040B2;
+  --tf-light-purple: #9B72CF;
+  --tf-bg-dark:      #1A0533;
+  --tf-surface:      #F7F3FF;
+  --tf-border:       #DDD0F0;
+  --tf-text:         #1A1A2E;
+  --tf-code-bg:      #1A0533;
+  --tf-code-text:    #E2D9F3;
 }
 
+/* === RESET === */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* === BASE === */
+body {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background: #FAFAFA;
+  color: var(--tf-text);
+  margin: 0;
+  line-height: 1.75;
+}
+
+a {
+  color: var(--tf-purple);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--tf-dark-purple);
+  text-decoration: underline;
+}
+
+/* ============================================
+   HEADER (overrides Minima)
+   ============================================ */
+.site-header {
+  background: linear-gradient(135deg, #1A0533 0%, #2D0A66 60%, #4040B2 100%);
+  border-bottom: none !important;
+  padding: 0 !important;
+  min-height: unset !important;
+}
+
+.site-header .wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.site-title {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  color: #fff !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+}
+
+.site-title .tf-logo {
+  width: 28px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.site-nav {
+  background: transparent !important;
+  border: none !important;
+}
+
+.site-nav .page-link {
+  color: rgba(255,255,255,0.85) !important;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 2px;
+}
+
+.site-nav .page-link:hover {
+  background: rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.site-nav input ~ .trigger {
+  display: flex;
+  align-items: center;
+}
+
+/* hamburger icon on mobile */
+.site-nav .menu-icon > svg path,
+.site-nav .menu-icon > svg rect {
+  fill: #fff !important;
+}
+
+@media (max-width: 600px) {
+  .site-nav input ~ .trigger {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    background: #2D0A66;
+    border-radius: 0 0 8px 8px;
+    padding: 8px 0;
+    position: absolute;
+    right: 16px;
+    top: 64px;
+    min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    z-index: 100;
+  }
+  .site-nav input:checked ~ .trigger { display: flex; }
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.site-footer {
+  background: #1A0533 !important;
+  color: rgba(255,255,255,0.65) !important;
+  font-size: 0.85rem;
+  padding: 20px 0 !important;
+  border-top: none !important;
+  margin-top: 60px;
+}
+
+.site-footer .wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.site-footer a { color: var(--tf-light-purple); }
+
+/* ============================================
+   HOMEPAGE
+   ============================================ */
+.page-content .wrapper,
+.home .wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.home h1.page-heading,
+.page-content h1 {
+  color: var(--tf-bg-dark);
+  border-bottom: 3px solid var(--tf-purple);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+/* ============================================
+   TP PAGE CONTAINER
+   ============================================ */
 .container {
   max-width: 900px;
-  margin: auto;
-  padding: 40px;
+  margin: 0 auto;
+  padding: 40px 32px;
 }
 
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
 h1 {
-  border-bottom: 3px solid #6366f1;
-  padding-bottom: 10px;
+  font-size: 1.8rem;
+  color: var(--tf-bg-dark);
+  border-bottom: 3px solid var(--tf-purple);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 h2 {
-  color: #4f46e5;
-  margin-top: 30px;
+  color: var(--tf-purple);
+  font-size: 1.2rem;
+  margin-top: 32px;
+  margin-bottom: 12px;
 }
 
+h3 { color: var(--tf-dark-purple); }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--tf-border);
+  margin: 32px 0;
+}
+
+/* ============================================
+   CARDS / SECTIONS
+   ============================================ */
 .section {
-  background: white;
-  padding: 20px;
+  background: #fff;
+  padding: 22px 26px;
   border-radius: 12px;
-  margin-top: 20px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  margin-top: 22px;
+  box-shadow: 0 4px 20px rgba(123,66,188,0.08);
+  border: 1px solid var(--tf-border);
 }
 
 .objective {
   border-left: 5px solid #22c55e;
-  padding-left: 15px;
 }
 
 .tasks {
-  border-left: 5px solid #3b82f6;
-  padding-left: 15px;
+  border-left: 5px solid var(--tf-purple);
+}
+
+/* ============================================
+   CODE BLOCKS
+   ============================================ */
+pre, code {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
 pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 15px;
-  border-radius: 8px;
+  background: var(--tf-code-bg);
+  color: var(--tf-code-text);
+  padding: 20px;
+  border-radius: 10px;
   overflow-x: auto;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  border: 1px solid rgba(123,66,188,0.25);
 }
 
 code {
-  background: #e2e8f0;
-  padding: 2px 6px;
-  border-radius: 6px;
+  background: var(--tf-surface);
+  color: var(--tf-purple);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.88em;
+  border: 1px solid var(--tf-border);
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+ul, ol { padding-left: 1.5em; }
+li { margin-bottom: 6px; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 640px) {
+  .container,
+  .page-content .wrapper,
+  .home .wrapper { padding: 20px 16px; }
+  .site-header .wrapper { padding: 0 16px; }
 }

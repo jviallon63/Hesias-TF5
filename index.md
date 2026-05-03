@@ -9,6 +9,7 @@ Bienvenue dans les travaux pratiques Terraform.
 
 ## 🧪 Liste des TP
 
-{% for tp in site.tp %}
+{% assign tp_pages = site.pages | where_exp: "p", "p.dir == '/tp/'" | sort: "name" %}
+{% for tp in tp_pages %}
 - [{{ tp.title }}]({{ tp.url }})
 {% endfor %}
