@@ -1,5 +1,5 @@
 ---
-title: "TP 2 - Premier projet"
+title: "TP 2"
 objective: "Objectif pédagogique"
 ---
 

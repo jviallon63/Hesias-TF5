@@ -1,5 +1,5 @@
 ---
-title: "TP 1 — Initialisation de l'environnement"
+title: "TP 1"
 objective: "Objectif pédagogique"
 ---
 
