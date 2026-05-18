@@ -293,3 +293,4 @@ Tapez `yes` pour confirmer. Vérifiez ensuite dans le portail Azure que le Resou
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+
