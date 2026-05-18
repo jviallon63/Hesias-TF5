@@ -1,5 +1,5 @@
 ---
-title: "TP 2 — Le langage HCL et le cycle de vie Terraform"
+title: "TP 2 - Le langage HCL et le cycle de vie Terraform"
 objective: "Apprivoiser la syntaxe HCL, structurer un projet Terraform et déployer une infrastructure complète sur Azure."
 ---
 

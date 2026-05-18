@@ -1,5 +1,5 @@
 ---
-title: "TP 4 — Modules et logiques avancées"
+title: "TP 4 - Modules et logiques avancées"
 objective: "Factoriser la création des NSG dans un module local, puis maîtriser count, for_each et les dynamic blocks pour gérer des ressources dynamiques."
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: "TP 3 — State distant et gestion multi-environnements"
+title: "TP 3 - State distant et gestion multi-environnements"
 objective: "Configurer un backend Azure distant, gérer plusieurs environnements avec des states séparés et maîtriser les commandes de manipulation du state."
 ---
 
