@@ -79,6 +79,8 @@ a:hover {
   border: none !important;
 }
 
+.site-nav .nav-trigger { display: none; }
+
 .site-nav .page-link {
   color: rgba(255,255,255,0.85) !important;
   font-size: 0.88rem;
