@@ -38,9 +38,9 @@ Terraform est un outil open-source maintenu par HashiCorp. Il s'installe comme u
 - Quelle est la différence entre installer Terraform via un gestionnaire de paquets et le télécharger manuellement ?
 - Comment s'assurer que la version installée est compatible avec un projet existant ?
 
-<details>
-<summary>Solution — Étape 1</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Étape 1</summary>
+{:/nomarkdown}
 
 **Installation sur macOS (Homebrew) :**
 ```bash
@@ -63,8 +63,9 @@ terraform -version
 > La version affichée doit être >= 1.5.
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
 
 ---
 
@@ -87,9 +88,9 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 - Quelle est la différence entre un *type de ressource* (`azurerm_resource_group`) et le *nom local* que vous lui donnez (`"tp"`) ?
 - Pourquoi est-il recommandé de contraindre la version d'un provider ?
 
-<details>
-<summary>Solution — Étape 2</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Étape 2</summary>
+{:/nomarkdown}
 
 ```bash
 mkdir tp-terraform && cd tp-terraform
@@ -120,8 +121,9 @@ resource "azurerm_resource_group" "tp" {
 > `~> 3.0` signifie "toute version >= 3.0 et < 4.0". Cela évite les breaking changes lors d'une montée de version majeure.
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
 
 ---
 
@@ -141,9 +143,9 @@ Terraform a besoin de s'authentifier auprès d'Azure pour créer des ressources.
 - Pourquoi ne met-on pas les credentials (identifiant, mot de passe) directement dans le fichier `.tf` ?
 - Quelle méthode d'authentification serait préférable dans un pipeline CI/CD ?
 
-<details>
-<summary>Solution — Étape 3</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Étape 3</summary>
+{:/nomarkdown}
 
 **Connexion interactive :**
 ```bash
@@ -162,8 +164,9 @@ az account set --subscription "<nom-ou-id-de-labonnement>"
 ```
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
 
 ---
 
@@ -183,9 +186,9 @@ Le workflow Terraform suit toujours le même enchaînement : **init → plan →
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois sans modifier le fichier `.tf` ?
 - À quoi sert le flag `-out` de `terraform plan` ?
 
-<details>
-<summary>Solution — Étape 4</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Étape 4</summary>
+{:/nomarkdown}
 
 ```bash
 # 1. Initialiser le répertoire (télécharge le provider azurerm)
@@ -203,8 +206,9 @@ Tapez `yes` lorsque la confirmation vous est demandée.
 > Si vous relancez `apply` sans modifier le fichier, Terraform répond `No changes. Infrastructure is up-to-date.` — c'est le principe d'**idempotence**.
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
 
 ---
 
@@ -229,9 +233,9 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 
 > 💡 Consultez la [documentation sur le state Terraform](https://developer.hashicorp.com/terraform/language/state) et la page sur le [`.terraform.lock.hcl`](https://developer.hashicorp.com/terraform/language/files/dependency-lock) pour approfondir.
 
-<details>
-<summary>Solution — Étape 5</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Étape 5</summary>
+{:/nomarkdown}
 
 **Lister les fichiers :**
 ```bash
@@ -252,8 +256,9 @@ terraform show
 ```
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
 
 ---
 
@@ -274,9 +279,9 @@ terraform show
 
 Pour supprimer les ressources créées et éviter des coûts inutiles, détruisez l'infrastructure gérée par Terraform. Cherchez la commande correspondante dans la documentation.
 
-<details>
-<summary>Solution — Nettoyage</summary>
-<div markdown="1">
+{::nomarkdown}
+<details><summary>Solution — Nettoyage</summary>
+{:/nomarkdown}
 
 ```bash
 terraform destroy
@@ -285,5 +290,6 @@ terraform destroy
 Tapez `yes` pour confirmer. Vérifiez ensuite dans le portail Azure que le Resource Group a bien été supprimé.
 
 
-</div>
+{::nomarkdown}
 </details>
+{:/nomarkdown}
