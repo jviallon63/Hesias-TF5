@@ -30,7 +30,7 @@
         {% assign tp_pages = site.pages | where_exp: "p", "p.dir == '/tp/'" | sort: "name" %}
         {% for tp in tp_pages %}
           {% if tp.title %}
-          <a class="page-link" href="{{ tp.url | relative_url }}">{{ tp.title | split: " —" | first | escape }}</a>
+          <a class="page-link" href="{{ tp.url | relative_url }}">{{ tp.title | split: " -" | first | escape }}</a>
           {% endif %}
         {% endfor %}
       </div>
