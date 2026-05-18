@@ -183,14 +183,16 @@ a:hover {
   padding: 28px 16px 28px 20px;
   max-height: calc(100vh - 90px);
   overflow-y: auto;
-  border-left: 1px solid var(--tf-border);
-  background: transparent;
+  border-left: 2px solid var(--tf-purple);
+  background: #fff;
+  z-index: 500;
   scrollbar-width: thin;
+  box-shadow: -4px 0 16px rgba(0,0,0,0.06);
 }
 
 /* Show whenever viewport is wide enough — no JS required */
 @media (min-width: 1300px) {
-  .toc-sidebar { display: block; }
+  .toc-sidebar { display: block !important; }
 }
 
 .toc-title {
