@@ -13,64 +13,81 @@
 <body>
   {% include header.html %}
 
-  <div class="tp-layout">
-    <main class="container">
+  <main class="container">
 
-      <h1>{{ page.title }}</h1>
+    <h1>{{ page.title }}</h1>
 
-      {% if page.objective %}
-      <div class="section objective">
-        <h2>🎯 Objectif</h2>
-        <p>{{ page.objective }}</p>
-      </div>
-      {% endif %}
+    {% if page.objective %}
+    <div class="section objective">
+      <h2>🎯 Objectif</h2>
+      <p>{{ page.objective }}</p>
+    </div>
+    {% endif %}
 
-      {{ content }}
+    {{ content }}
 
-    </main>
+  </main>
 
-    <aside class="toc-sidebar" aria-label="Sommaire">
-      <div class="toc-inner">
-        <p class="toc-title">Sommaire</p>
-        <nav id="toc-nav"></nav>
-      </div>
-    </aside>
-  </div>
+  <aside class="toc-sidebar" aria-label="Sur cette page">
+    <p class="toc-title">Sur cette page</p>
+    <nav id="toc-nav"></nav>
+  </aside>
 
   {% include footer.html %}
 
   <script>
   (function () {
-    var headings = document.querySelector('main').querySelectorAll('h2, h3');
-    var nav = document.getElementById('toc-nav');
-    if (!headings.length || !nav) return;
+    var main = document.querySelector('main');
+    var nav  = document.getElementById('toc-nav');
+    var sidebar = document.querySelector('.toc-sidebar');
+    if (!main || !nav || !sidebar) return;
+
+    var headings = Array.from(main.querySelectorAll('h2, h3'));
+    if (!headings.length) return;
 
     var ul = document.createElement('ul');
     headings.forEach(function (h, i) {
-      if (!h.id) h.id = 'toc-' + i;
+      if (!h.id) h.id = 'heading-' + i;
       var li = document.createElement('li');
       li.className = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
       var a = document.createElement('a');
       a.href = '#' + h.id;
-      a.textContent = h.textContent.replace(/^[\p{Emoji}\s]+/u, '').trim();
+      // Strip leading emoji and non-letter characters
+      var text = h.textContent.trim().replace(/^[^\p{L}\d]+/u, '').trim();
+      a.textContent = text || h.textContent.trim();
       li.appendChild(a);
       ul.appendChild(li);
     });
     nav.appendChild(ul);
+    sidebar.classList.add('toc-ready');
 
-    // Highlight active section on scroll
-    var links = nav.querySelectorAll('a');
+    // Highlight active heading on scroll
+    var links = Array.from(nav.querySelectorAll('a'));
+    var activeId = null;
+
+    var setActive = function (id) {
+      if (id === activeId) return;
+      activeId = id;
+      links.forEach(function (l) { l.classList.remove('active'); });
+      var a = nav.querySelector('a[href="#' + id + '"]');
+      if (a) a.classList.add('active');
+    };
+
     var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          links.forEach(function (l) { l.classList.remove('active'); });
-          var active = nav.querySelector('a[href="#' + entry.target.id + '"]');
-          if (active) active.classList.add('active');
+      var top = null;
+      headings.forEach(function (h) {
+        var rect = h.getBoundingClientRect();
+        if (rect.top <= 120 && rect.top > (top ? top.rect.top : -Infinity)) {
+          top = { id: h.id, rect: rect };
         }
       });
-    }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+      if (top) setActive(top.id);
+    }, { rootMargin: '0px 0px -60% 0px', threshold: [0, 1] });
 
     headings.forEach(function (h) { observer.observe(h); });
+
+    // Set first heading active on load
+    if (headings[0] && headings[0].id) setActive(headings[0].id);
   })();
   </script>
 </body>
