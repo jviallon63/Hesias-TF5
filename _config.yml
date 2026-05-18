@@ -2,6 +2,10 @@ title: "TF 5 - TPs"
 theme: minima
 
 markdown: kramdown
+layouts_dir: layout
+
+kramdown:
+  parse_block_html: true
 
 collections:
   tp:
