@@ -175,12 +175,12 @@ a:hover {
    TOC SIDEBAR — Docusaurus style (position: fixed)
    ============================================ */
 .toc-sidebar {
-  display: none; /* JS adds .toc-ready, media query shows it */
+  display: none;
   position: fixed;
   top: 80px;
   right: 0;
-  width: 230px;
-  padding: 28px 16px 28px 24px;
+  width: 240px;
+  padding: 28px 16px 28px 20px;
   max-height: calc(100vh - 90px);
   overflow-y: auto;
   border-left: 1px solid var(--tf-border);
@@ -188,8 +188,9 @@ a:hover {
   scrollbar-width: thin;
 }
 
-@media (min-width: 1400px) {
-  .toc-sidebar.toc-ready { display: block; }
+/* Show whenever viewport is wide enough — no JS required */
+@media (min-width: 1300px) {
+  .toc-sidebar { display: block; }
 }
 
 .toc-title {

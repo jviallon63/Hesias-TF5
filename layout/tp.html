@@ -52,14 +52,14 @@
       li.className = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
       var a = document.createElement('a');
       a.href = '#' + h.id;
-      // Strip leading emoji and non-letter characters
-      var text = h.textContent.trim().replace(/^[^\p{L}\d]+/u, '').trim();
-      a.textContent = text || h.textContent.trim();
+      // Strip leading emoji/symbols — keep only from first letter/digit
+      var raw = h.textContent.trim();
+      var match = raw.match(/[A-Za-z0-9\u00C0-\u024F\u0400-\u04FF]/);
+      a.textContent = match ? raw.slice(raw.indexOf(match[0])) : raw;
       li.appendChild(a);
       ul.appendChild(li);
     });
     nav.appendChild(ul);
-    sidebar.classList.add('toc-ready');
 
     // Highlight active heading on scroll
     var links = Array.from(nav.querySelectorAll('a'));
