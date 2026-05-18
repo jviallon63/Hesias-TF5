@@ -38,7 +38,7 @@ Terraform est un outil open-source maintenu par HashiCorp. Il s'installe comme u
 - Quelle est la différence entre installer Terraform via un gestionnaire de paquets et le télécharger manuellement ?
 - Comment s'assurer que la version installée est compatible avec un projet existant ?
 
-<details>
+<details markdown="1">
 <summary>Solution — Étape 1</summary>
 
 **Installation sur macOS (Homebrew) :**
@@ -84,7 +84,7 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 - Quelle est la différence entre un *type de ressource* (`azurerm_resource_group`) et le *nom local* que vous lui donnez (`"tp"`) ?
 - Pourquoi est-il recommandé de contraindre la version d'un provider ?
 
-<details>
+<details markdown="1">
 <summary>Solution — Étape 2</summary>
 
 ```bash
@@ -135,7 +135,7 @@ Terraform a besoin de s'authentifier auprès d'Azure pour créer des ressources.
 - Pourquoi ne met-on pas les credentials (identifiant, mot de passe) directement dans le fichier `.tf` ?
 - Quelle méthode d'authentification serait préférable dans un pipeline CI/CD ?
 
-<details>
+<details markdown="1">
 <summary>Solution — Étape 3</summary>
 
 **Connexion interactive :**
@@ -174,7 +174,7 @@ Le workflow Terraform suit toujours le même enchaînement : **init → plan →
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois sans modifier le fichier `.tf` ?
 - À quoi sert le flag `-out` de `terraform plan` ?
 
-<details>
+<details markdown="1">
 <summary>Solution — Étape 4</summary>
 
 ```bash
@@ -217,7 +217,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 
 > 💡 Consultez la [documentation sur le state Terraform](https://developer.hashicorp.com/terraform/language/state) et la page sur le [`.terraform.lock.hcl`](https://developer.hashicorp.com/terraform/language/files/dependency-lock) pour approfondir.
 
-<details>
+<details markdown="1">
 <summary>Solution — Étape 5</summary>
 
 **Lister les fichiers :**
@@ -259,7 +259,7 @@ terraform show
 
 Pour supprimer les ressources créées et éviter des coûts inutiles, détruisez l'infrastructure gérée par Terraform. Cherchez la commande correspondante dans la documentation.
 
-<details>
+<details markdown="1">
 <summary>Solution — Nettoyage</summary>
 
 ```bash
