@@ -1,4 +1,5 @@
 ---
+layout: tp
 title: "TP 1 - Prise en main de Terraform"
 objective: "Installer Terraform, créer un premier fichier de configuration, connecter Azure et provisionner un Resource Group."
 ---
