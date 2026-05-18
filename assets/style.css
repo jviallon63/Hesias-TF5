@@ -309,6 +309,14 @@ summary:hover {
 
 details > div[markdown] {
   padding: 0 20px 4px 20px;
+  color: var(--tf-text);
+}
+
+details > div[markdown] p,
+details > div[markdown] li,
+details > div[markdown] td,
+details > div[markdown] blockquote {
+  color: var(--tf-text);
 }
 
 details > div[markdown] > pre,
