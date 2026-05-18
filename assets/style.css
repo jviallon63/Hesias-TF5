@@ -319,6 +319,20 @@ details > div[markdown] blockquote {
   color: var(--tf-text);
 }
 
+details pre {
+  background: var(--tf-code-bg) !important;
+  color: var(--tf-code-text) !important;
+  border: 1px solid rgba(123,66,188,0.25);
+  margin: 12px 20px 16px 20px;
+}
+
+details pre code {
+  background: none !important;
+  color: inherit !important;
+  border: none;
+  padding: 0;
+}
+
 details > div[markdown] > pre,
 details > pre {
   margin: 0 0 16px 0;
