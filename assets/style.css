@@ -79,7 +79,13 @@ a:hover {
   border: none !important;
 }
 
-.site-nav .nav-trigger { display: none; }
+/* Hide checkbox and hamburger label on desktop */
+.site-nav .nav-trigger,
+.site-nav label[for="nav-trigger"] { display: none; }
+
+@media (max-width: 600px) {
+  .site-nav label[for="nav-trigger"] { display: block; }
+}
 
 .site-nav .page-link {
   color: rgba(255,255,255,0.85) !important;
