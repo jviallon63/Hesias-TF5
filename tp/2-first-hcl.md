@@ -9,12 +9,12 @@ Vous allez construire pas à pas une infrastructure Azure complète : réseau, m
 
 ```mermaid
 graph TD
-    RG["🗂️ Resource Group\nrg-tp-terraform"]
-    VNET["🌐 Virtual Network\nvnet-tp"]
-    SUBNET["🔀 Subnet\nsnet-tp"]
-    NIC["🔌 Network Interface\nnic-tp"]
-    DISK["💾 Managed Disk\ndisk-tp"]
-    VM["🖥️ Virtual Machine\nvm-tp"]
+    RG["🗂️ Resource Group\nrg-tp2-dev"]
+    VNET["🌐 Virtual Network\nvnet-tp2-dev"]
+    SUBNET["🔀 Subnet\nsnet-tp2-vm"]
+    NIC["🔌 Network Interface\nnic-tp2-vm"]
+    DISK["💾 Managed Disk\ndisk-tp2-vm-data"]
+    VM["🖥️ Virtual Machine\nvm-tp2-dev"]
 
     RG --> VNET
     VNET --> SUBNET
