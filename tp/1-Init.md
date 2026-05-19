@@ -135,10 +135,9 @@ Le workflow Terraform suit toujours le même enchaînement : **init → plan →
 - **Planifiez** l'exécution. Cette commande analyse votre configuration et affiche ce qui va être créé, modifié ou supprimé — sans rien toucher à Azure. Lisez attentivement la sortie.
 - **Appliquez** la configuration. Cette commande exécute réellement les changements sur Azure. Une confirmation vous sera demandée.
 
-> 💡 Cherchez dans la documentation Terraform les commandes `terraform init`, `terraform plan` et `terraform apply`. Prêtez attention aux flags disponibles (`-out`, `-auto-approve`, `-var`…).
+> 💡 Cherchez dans la documentation des commandes Terraform les différentes options disponibles. Prêtez attention aux flags disponibles (`-out`, `-auto-approve`, `-var`…).
 
 **Questions de réflexion :**
-- Explorer le plan généré avant l'apply.
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois sans modifier le fichier `.tf` ?
 
 {::nomarkdown}
@@ -193,7 +192,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 |---|---|
 | `.terraform/` | Cache local contenant les binaires des providers téléchargés. À ajouter dans `.gitignore`. |
 | `.terraform.lock.hcl` | Fichier de verrouillage des versions exactes des providers. **Doit** être commité pour garantir la reproductibilité. |
-| `terraform.tfstate` | Représente l'état courant de l'infrastructure gérée par Terraform (mapping entre la config et les ressources réelles). Peut contenir des données sensibles — à ne pas commiter, à stocker dans un **backend distant** (ex : Azure Blob Storage) en production. |
+| `terraform.tfstate` | Représente l'état courant de l'infrastructure gérée par Terraform (mapping entre la config et les ressources réelles). Peut contenir des données sensibles — à ne pas commiter. |
 
 {::nomarkdown}
 </details>
