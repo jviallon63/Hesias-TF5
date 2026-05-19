@@ -64,7 +64,7 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 
 Contenu du fichier `main.tf` :
 
-```hcl main.tf
+```hcl
 terraform {
   required_providers {
     azurerm = {
@@ -85,7 +85,6 @@ resource "azurerm_resource_group" "tp" {
 ```
 
 > `~> 4.0` signifie "toute version >= 4.0 et < 5.0". Cela évite les breaking changes lors d'une montée de version majeure.
-
 
 {::nomarkdown}
 </details>
