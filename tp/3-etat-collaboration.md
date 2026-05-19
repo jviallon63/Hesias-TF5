@@ -1,7 +1,6 @@
 ---
 layout: tp
 title: "TP 3 - State distant et gestion multi-environnements"
-objective: "Configurer un backend Azure distant, gérer plusieurs environnements avec des states séparés et maîtriser les commandes de manipulation du state."
 ---
 
 # 📦 Contexte
@@ -24,15 +23,15 @@ Votre équipe grossit. Plusieurs développeurs travaillent sur la même infrastr
 
 ---
 
-## 🗂️ Partie 3.1 — Créer le Storage Account pour le backend distant
+## 🗂️ Partie 3.1 - Créer le Storage Account pour le backend distant
 
 > **Point de départ :** un nouveau dossier vide. Votre formateur expliquera le concept de backend distant et ses enjeux avant cette partie.
 
 ---
 
-### 📝 Étape 3.1.1 — Bootstrapper le Storage Account avec un backend local
+### 📝 Étape 3.1.1 - Bootstrapper le Storage Account avec un backend local
 
-Le Storage Account qui hébergera les states ne peut pas avoir son propre state dans Azure — c'est un problème de bootstrap. On commence donc avec un backend **local**, que l'on supprimera ensuite.
+Le Storage Account qui hébergera les states ne peut pas avoir son propre state dans Azure - c'est un problème de bootstrap. On commence donc avec un backend **local**, que l'on supprimera ensuite.
 
 **Ce que vous devez faire :**
 
@@ -50,7 +49,7 @@ Le Storage Account qui hébergera les states ne peut pas avoir son propre state 
 - Que se passe-t-il si deux développeurs lancent `terraform apply` en même temps sur un backend local ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.1.1</summary>
+<details><summary>Solution - Étape 3.1.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -123,7 +122,7 @@ terraform init
 terraform apply
 ```
 
-Notez le nom du Storage Account généré — vous en aurez besoin pour les étapes suivantes :
+Notez le nom du Storage Account généré - vous en aurez besoin pour les étapes suivantes :
 
 ```bash
 terraform output -raw storage_account_name
@@ -147,9 +146,9 @@ output "resource_group_name" {
 
 ---
 
-### 📝 Étape 3.1.2 — Supprimer le tfstate local du bootstrap
+### 📝 Étape 3.1.2 - Supprimer le tfstate local du bootstrap
 
-Le Storage Account existe maintenant dans Azure. Le tfstate local de `tp3-bootstrap` doit être conservé **précieusement** — c'est le seul moyen pour Terraform de gérer cette ressource. Ne le migrez pas vers le backend distant qu'il héberge lui-même.
+Le Storage Account existe maintenant dans Azure. Le tfstate local de `tp3-bootstrap` doit être conservé **précieusement** - c'est le seul moyen pour Terraform de gérer cette ressource. Ne le migrez pas vers le backend distant qu'il héberge lui-même.
 
 **Ce que vous devez faire :**
 
@@ -160,7 +159,7 @@ Le Storage Account existe maintenant dans Azure. Le tfstate local de `tp3-bootst
 > 💡 Commande utile : `az storage container list --account-name <nom> --auth-mode login`
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.1.2</summary>
+<details><summary>Solution - Étape 3.1.2</summary>
 {:/nomarkdown}
 
 `.gitignore` à la racine :
@@ -189,13 +188,13 @@ az storage container list \
 
 ---
 
-## 🗂️ Partie 3.2 — Structure multi-environnements avec backend distant
+## 🗂️ Partie 3.2 - Structure multi-environnements avec backend distant
 
 > **Prérequis :** le Storage Account est déployé. Votre formateur présentera la stratégie de découpage par répertoire avant cette partie.
 
 ---
 
-### 📝 Étape 3.2.1 — Créer la structure de répertoires
+### 📝 Étape 3.2.1 - Créer la structure de répertoires
 
 L'objectif est d'avoir **un state Azure par environnement**, tous stockés dans le même container `tfstate` mais sous des clés différentes.
 
@@ -230,7 +229,7 @@ tp3-nsg/
 - Pourquoi le réseau est-il dans un répertoire `shared/` séparé des NSG ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.2.1</summary>
+<details><summary>Solution - Étape 3.2.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -273,7 +272,7 @@ Pour **`dev/`** : remplacez `key = "dev.tfstate"`, pour **`staging/`** : `key = 
 
 ---
 
-### 📝 Étape 3.2.2 — Déployer le réseau partagé
+### 📝 Étape 3.2.2 - Déployer le réseau partagé
 
 **Ce que vous devez faire :**
 
@@ -282,12 +281,12 @@ Dans `shared/main.tf`, déclarez :
 2. Un VNet `vnet-tp3` avec l'espace `10.0.0.0/16`
 3. Trois subnets : `snet-dev` (`10.0.1.0/24`), `snet-staging` (`10.0.2.0/24`), `snet-prod` (`10.0.3.0/24`)
 
-Dans `shared/outputs.tf`, exposez les IDs des trois subnets — les projets NSG en auront besoin.
+Dans `shared/outputs.tf`, exposez les IDs des trois subnets - les projets NSG en auront besoin.
 
 Initialisez et appliquez depuis le répertoire `shared/`.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.2.2</summary>
+<details><summary>Solution - Étape 3.2.2</summary>
 {:/nomarkdown}
 
 `shared/main.tf` :
@@ -357,7 +356,7 @@ Vérifiez dans le portail Azure : un blob `shared.tfstate` doit être apparu dan
 
 ---
 
-### 📝 Étape 3.2.3 — Déployer les NSG par environnement
+### 📝 Étape 3.2.3 - Déployer les NSG par environnement
 
 Chaque environnement a des règles NSG différentes. Vous allez factoriser la structure des règles via des variables.
 
@@ -379,7 +378,7 @@ Pour chaque environnement (`dev/`, `staging/`, `prod/`) :
 - Pourquoi utilise-t-on un data source pour le subnet plutôt qu'une référence directe ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.2.3</summary>
+<details><summary>Solution - Étape 3.2.3</summary>
 {:/nomarkdown}
 
 Exemple pour **`dev/main.tf`** :
@@ -461,13 +460,13 @@ Vérifiez dans le container `tfstate` : vous devez voir `dev.tfstate`, `staging.
 
 ---
 
-## 🗂️ Partie 3.3 — Import d'une ressource existante
+## 🗂️ Partie 3.3 - Import d'une ressource existante
 
 > **Prérequis :** le réseau de la partie 3.2 est déployé. Votre formateur introduira le concept d'import avant cette partie.
 
 ---
 
-### 📝 Étape 3.3.1 — Créer une ressource manuellement dans Azure
+### 📝 Étape 3.3.1 - Créer une ressource manuellement dans Azure
 
 **Ce que vous devez faire :**
 
@@ -475,10 +474,10 @@ Vérifiez dans le container `tfstate` : vous devez voir `dev.tfstate`, `staging.
 - Ajoutez-y une règle inbound SSH manuellement.
 - Notez bien l'**ID Azure complet** de ce NSG (visible dans le portail, onglet "Properties" ou via `az network nsg show`).
 
-> 💡 Cet exercice simule une ressource créée hors Terraform par un collègue ou une procédure d'urgence — ce qu'on appelle une ressource **"orpheline"** du point de vue du state.
+> 💡 Cet exercice simule une ressource créée hors Terraform par un collègue ou une procédure d'urgence - ce qu'on appelle une ressource **"orpheline"** du point de vue du state.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.3.1</summary>
+<details><summary>Solution - Étape 3.3.1</summary>
 {:/nomarkdown}
 
 Via la CLI Azure :
@@ -516,14 +515,14 @@ az network nsg show \
 
 ---
 
-### 📝 Étape 3.3.2 — Importer la ressource dans Terraform
+### 📝 Étape 3.3.2 - Importer la ressource dans Terraform
 
 **Ce que vous devez faire :**
 
 Dans l'un des projets environnement (ex. `dev/`), écrivez le bloc `resource` correspondant au NSG importé **sans** lancer `apply`. Puis utilisez `terraform import` pour associer la ressource existante à ce bloc.
 
 Après l'import :
-1. Lancez `terraform plan` — que devrait-il afficher ?
+1. Lancez `terraform plan` - que devrait-il afficher ?
 2. Ajustez la configuration si nécessaire pour atteindre l'état `No changes`.
 
 > 💡 La syntaxe est : `terraform import <type>.<nom_local> <id_azure>`
@@ -533,7 +532,7 @@ Après l'import :
 - Que se passe-t-il si vous lancez `terraform apply` sans avoir aligné la configuration avec la réalité Azure ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.3.2</summary>
+<details><summary>Solution - Étape 3.3.2</summary>
 {:/nomarkdown}
 
 Ajoutez dans `dev/main.tf` le bloc ressource vide (à compléter après l'import) :
@@ -559,7 +558,7 @@ Inspectez ce que Terraform a récupéré :
 terraform state show azurerm_network_security_group.nsg_import
 ```
 
-Lancez `terraform plan` — si des différences apparaissent (ex. la règle SSH n'est pas dans votre config), complétez le bloc `resource` pour les aligner. L'objectif est d'obtenir `No changes`.
+Lancez `terraform plan` - si des différences apparaissent (ex. la règle SSH n'est pas dans votre config), complétez le bloc `resource` pour les aligner. L'objectif est d'obtenir `No changes`.
 
 {::nomarkdown}
 </details>
@@ -567,7 +566,7 @@ Lancez `terraform plan` — si des différences apparaissent (ex. la règle SSH 
 
 ---
 
-### 📝 Étape 3.3.3 — Comparaison avec aztfexport
+### 📝 Étape 3.3.3 - Comparaison avec aztfexport
 
 Azure propose un outil officiel [`aztfexport`](https://github.com/Azure/aztfexport) qui automatise la génération de la configuration Terraform à partir de ressources Azure existantes.
 
@@ -584,7 +583,7 @@ Azure propose un outil officiel [`aztfexport`](https://github.com/Azure/aztfexpo
 - La configuration générée est-elle directement utilisable en production ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.3.3</summary>
+<details><summary>Solution - Étape 3.3.3</summary>
 {:/nomarkdown}
 
 Installation sur macOS :
@@ -608,7 +607,7 @@ Ou export de tout le Resource Group :
 aztfexport resource-group rg-tp3-shared
 ```
 
-Comparez les fichiers générés (`main.tf`, `import.tf`) avec votre configuration manuelle. `aztfexport` génère souvent des configurations verbeuses avec tous les attributs optionnels — il est nécessaire de les nettoyer avant utilisation.
+Comparez les fichiers générés (`main.tf`, `import.tf`) avec votre configuration manuelle. `aztfexport` génère souvent des configurations verbeuses avec tous les attributs optionnels - il est nécessaire de les nettoyer avant utilisation.
 
 {::nomarkdown}
 </details>
@@ -616,13 +615,13 @@ Comparez les fichiers générés (`main.tf`, `import.tf`) avec votre configurati
 
 ---
 
-## 🗂️ Partie 3.4 — Manipulation du state
+## 🗂️ Partie 3.4 - Manipulation du state
 
 > **Prérequis :** au moins un environnement est déployé avec son state distant. Votre formateur présentera les risques des manipulations de state avant cette partie.
 
 ---
 
-### 📝 Étape 3.4.1 — Inspecter le state
+### 📝 Étape 3.4.1 - Inspecter le state
 
 **Ce que vous devez faire :**
 
@@ -638,7 +637,7 @@ Depuis le répertoire `dev/`, explorez le state avec les commandes suivantes et 
 > 💡 L'`<adresse>` est le chemin complet d'une ressource dans le state, tel qu'affiché par `state list` (ex. `azurerm_network_security_group.nsg_dev`).
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.4.1</summary>
+<details><summary>Solution - Étape 3.4.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -670,7 +669,7 @@ terraform show -json | jq .
 
 ---
 
-### 📝 Étape 3.4.2 — Renommer une ressource dans le state (`mv`)
+### 📝 Étape 3.4.2 - Renommer une ressource dans le state (`mv`)
 
 **Contexte :** vous souhaitez renommer le label local du NSG de `nsg_dev` en `main` pour uniformiser les conventions.
 
@@ -684,10 +683,10 @@ terraform show -json | jq .
 > ⚠️ `terraform state mv` modifie le state directement. Sur un backend distant, un verrou (lock) est automatiquement posé pendant l'opération.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.4.2</summary>
+<details><summary>Solution - Étape 3.4.2</summary>
 {:/nomarkdown}
 
-Après avoir renommé le bloc dans `main.tf`, le `plan` prévoit de **détruire** l'ancien NSG et d'en **créer** un nouveau — ce qui n'est pas souhaité.
+Après avoir renommé le bloc dans `main.tf`, le `plan` prévoit de **détruire** l'ancien NSG et d'en **créer** un nouveau - ce qui n'est pas souhaité.
 
 La commande `mv` déplace l'adresse dans le state sans toucher à Azure :
 
@@ -710,7 +709,7 @@ terraform plan
 
 ---
 
-### 📝 Étape 3.4.3 — Retirer une ressource du state (`rm`)
+### 📝 Étape 3.4.3 - Retirer une ressource du state (`rm`)
 
 **Contexte :** vous souhaitez que Terraform **arrête de gérer** l'association NSG/subnet (`azurerm_subnet_network_security_group_association`) sans la supprimer dans Azure.
 
@@ -721,10 +720,10 @@ terraform plan
 3. Supprimez également le bloc resource correspondant dans `main.tf`.
 4. Vérifiez dans le portail Azure que l'association existe toujours.
 
-> 💡 `state rm` est utile pour "désadopter" une ressource sans la détruire — par exemple pour la confier à une autre équipe ou à un autre projet Terraform.
+> 💡 `state rm` est utile pour "désadopter" une ressource sans la détruire - par exemple pour la confier à une autre équipe ou à un autre projet Terraform.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 3.4.3</summary>
+<details><summary>Solution - Étape 3.4.3</summary>
 {:/nomarkdown}
 
 ```bash
@@ -737,7 +736,7 @@ terraform state rm azurerm_subnet_network_security_group_association.dev
 
 Après le `rm`, `terraform plan` propose de **recréer** l'association (elle n'est plus dans le state mais est dans la config). Pour éviter cela, supprimez aussi le bloc resource dans `main.tf`.
 
-Vérifiez dans le portail Azure que le NSG est **toujours associé** au subnet — `state rm` ne touche pas à Azure.
+Vérifiez dans le portail Azure que le NSG est **toujours associé** au subnet - `state rm` ne touche pas à Azure.
 
 {::nomarkdown}
 </details>
@@ -766,7 +765,7 @@ Vérifiez dans le portail Azure que le NSG est **toujours associé** au subnet �
 Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis le bootstrap.
 
 {::nomarkdown}
-<details><summary>Solution — Nettoyage</summary>
+<details><summary>Solution - Nettoyage</summary>
 {:/nomarkdown}
 
 ```bash

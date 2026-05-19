@@ -40,7 +40,7 @@ graph TD
 
 ---
 
-## 📝 Partie 2.1 - Infrastructure de base
+## 🗂️ Partie 2.1 - Infrastructure de base
 
 > **Point de départ :** un nouveau dossier vide. À la fin de cette partie, vous aurez un réseau fonctionnel sur Azure.
 
@@ -547,7 +547,7 @@ Ajoutez `tags = local.common_tags` de la même façon sur `azurerm_virtual_netwo
 
 ---
 
-### 📝 Étape 2.4.2 - Expérimenter la dérive d'état
+### 🗂️ Étape 2.5 - Expérimenter la dérive d'état
 
 Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform est altéré. Procédez **dans l'ordre** et notez vos observations.
 

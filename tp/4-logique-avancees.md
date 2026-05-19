@@ -1,7 +1,6 @@
 ---
 layout: tp
 title: "TP 4 - Modules et logiques avancées"
-objective: "Factoriser la création des NSG dans un module local, puis maîtriser count, for_each et les dynamic blocks pour gérer des ressources dynamiques."
 ---
 
 # 📦 Contexte
@@ -24,13 +23,13 @@ Le code des NSG du TP3 est fonctionnel mais répétitif : `dev/`, `staging/` et 
 
 ---
 
-## 🗂️ Partie 4.1 — Créer et utiliser un module NSG
+## 🗂️ Partie 4.1 - Créer et utiliser un module NSG
 
 > **Point de départ :** le projet `tp3-nsg/` du TP précédent. Votre formateur introduira le concept de module Terraform avant cette partie.
 
 ---
 
-### 📝 Étape 4.1.1 — Créer la structure du module
+### 📝 Étape 4.1.1 - Créer la structure du module
 
 Un module Terraform est simplement un **répertoire contenant des fichiers `.tf`**. La convention est de les placer dans un sous-dossier `modules/`.
 
@@ -68,7 +67,7 @@ Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module**
 - Pourquoi le module ne doit-il **pas** contenir de bloc `provider` ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.1.1</summary>
+<details><summary>Solution - Étape 4.1.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -77,7 +76,7 @@ mkdir -p tp4-nsg/modules/nsg
 touch tp4-nsg/modules/nsg/{main.tf,variables.tf,outputs.tf,README.md}
 ```
 
-**Contrat du module — réflexion préalable :**
+**Contrat du module - réflexion préalable :**
 
 | Input | Type | Description |
 |---|---|---|
@@ -99,13 +98,13 @@ touch tp4-nsg/modules/nsg/{main.tf,variables.tf,outputs.tf,README.md}
 
 ---
 
-### 📝 Étape 4.1.2 — Écrire le module
+### 📝 Étape 4.1.2 - Écrire le module
 
 **Ce que vous devez faire :**
 
 Dans `modules/nsg/variables.tf`, déclarez chaque input avec son type, sa description et une valeur par défaut si pertinent.
 
-Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) — pour l'instant, créez le NSG **sans règles**.
+Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) - pour l'instant, créez le NSG **sans règles**.
 
 Dans `modules/nsg/outputs.tf`, exposez l'`id` et le `name` du NSG.
 
@@ -114,7 +113,7 @@ Dans `modules/nsg/README.md`, documentez le module : description, inputs, output
 > 💡 Pour les types complexes comme `list(object(...))`, consultez la doc [Type Constraints](https://developer.hashicorp.com/terraform/language/expressions/type-constraints). La définition du type d'un objet dans une variable est un contrat fort.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.1.2</summary>
+<details><summary>Solution - Étape 4.1.2</summary>
 {:/nomarkdown}
 
 `modules/nsg/variables.tf` :
@@ -222,7 +221,7 @@ Voir variables.tf et outputs.tf.
 
 ---
 
-### 📝 Étape 4.1.3 — Appeler le module depuis dev et prod
+### 📝 Étape 4.1.3 - Appeler le module depuis dev et prod
 
 **Ce que vous devez faire :**
 
@@ -230,7 +229,7 @@ Remplacez le code des ressources NSG dans `dev/main.tf` et `prod/main.tf` par de
 
 Après la refactorisation :
 1. Lancez `terraform init` dans chaque répertoire (nécessaire après l'ajout d'un module).
-2. Lancez `terraform plan` — observez ce que Terraform prévoit. Est-ce attendu ?
+2. Lancez `terraform plan` - observez ce que Terraform prévoit. Est-ce attendu ?
 3. Si nécessaire, utilisez `terraform state mv` pour éviter les destroy/recreate.
 
 > 💡 L'adresse d'une ressource **à l'intérieur d'un module** dans le state suit le format `module.<nom_module>.<type>.<label>`.
@@ -240,7 +239,7 @@ Après la refactorisation :
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.1.3</summary>
+<details><summary>Solution - Étape 4.1.3</summary>
 {:/nomarkdown}
 
 `dev/main.tf` (extrait) :
@@ -295,7 +294,7 @@ terraform state mv \
 
 ---
 
-## 🗂️ Partie 4.2 — Logiques avancées : count, for_each et dynamic blocks
+## 🗂️ Partie 4.2 - Logiques avancées : count, for_each et dynamic blocks
 
 > **Prérequis :** le module NSG fonctionne. Votre formateur présentera les meta-arguments avant cette partie.
 >
@@ -303,7 +302,7 @@ terraform state mv \
 
 ---
 
-### 📝 Étape 4.2.1 — Définir une map de configuration NSG
+### 📝 Étape 4.2.1 - Définir une map de configuration NSG
 
 Vous allez centraliser la configuration de plusieurs NSG dans une **variable de type `map`**.
 
@@ -316,7 +315,7 @@ Réfléchissez à la structure de l'objet avant de coder : quels attributs sont 
 > 💡 Une `map` en Terraform est une collection de valeurs indexées par une **clé string**. Elle se prête bien aux ressources similaires qu'on veut instancier plusieurs fois avec des paramètres différents.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.2.1</summary>
+<details><summary>Solution - Étape 4.2.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -365,7 +364,7 @@ variable "nsg_configs" {
 
 ---
 
-### 📝 Étape 4.2.2 — Version 1 : `count` et ses limites
+### 📝 Étape 4.2.2 - Version 1 : `count` et ses limites
 
 **Ce que vous devez faire :**
 
@@ -379,10 +378,10 @@ Dans `main.tf`, utilisez `count` pour créer autant de NSG qu'il y a d'entrées 
 > 💡 `count` adresse les ressources par leur **index numérique** dans la liste. Que se passe-t-il quand l'index change ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.2.2</summary>
+<details><summary>Solution - Étape 4.2.2</summary>
 {:/nomarkdown}
 
-`main.tf` — Version 1 avec `count` :
+`main.tf` - Version 1 avec `count` :
 
 ```hcl
 resource "azurerm_resource_group" "rg" {
@@ -416,7 +415,7 @@ terraform state list
 terraform plan
 ```
 
-**Problème observé :** Terraform veut **modifier** `nsg[1]` (qui était `staging`, maintenant `prod`) et **détruire** `nsg[2]`. Il ne comprend pas qu'on a supprimé `staging` — il voit juste que les index ont changé.
+**Problème observé :** Terraform veut **modifier** `nsg[1]` (qui était `staging`, maintenant `prod`) et **détruire** `nsg[2]`. Il ne comprend pas qu'on a supprimé `staging` - il voit juste que les index ont changé.
 
 Ce comportement est **dangereux en production** : supprimer un élément du milieu d'une liste entraîne la destruction/recréation de toutes les ressources suivantes.
 
@@ -426,7 +425,7 @@ Ce comportement est **dangereux en production** : supprimer un élément du mili
 
 ---
 
-### 📝 Étape 4.2.3 — Version 2 : `for_each` comme solution
+### 📝 Étape 4.2.3 - Version 2 : `for_each` comme solution
 
 **Ce que vous devez faire :**
 
@@ -440,10 +439,10 @@ Remplacez le `count` par `for_each` en passant directement la `map` `var.nsg_con
 > 💡 Avec `for_each`, Terraform adresse chaque ressource par la **clé de la map** (`nsg["dev"]`, `nsg["staging"]`…). La suppression d'une clé n'affecte pas les autres.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.2.3</summary>
+<details><summary>Solution - Étape 4.2.3</summary>
 {:/nomarkdown}
 
-`main.tf` — Version 2 avec `for_each` :
+`main.tf` - Version 2 avec `for_each` :
 
 ```hcl
 resource "azurerm_network_security_group" "nsg" {
@@ -482,7 +481,7 @@ terraform plan
 ```bash
 terraform plan
 # → Plan: 0 to add, 0 to change, 1 to destroy.
-# Seul nsg["staging"] est détruit — dev et prod ne sont pas touchés.
+# Seul nsg["staging"] est détruit - dev et prod ne sont pas touchés.
 ```
 
 C'est le comportement attendu et sûr. `for_each` est **toujours préférable à `count`** pour des ressources différenciées par un identifiant métier.
@@ -493,7 +492,7 @@ C'est le comportement attendu et sûr. `for_each` est **toujours préférable à
 
 ---
 
-### 📝 Étape 4.2.4 — Version 3 : `dynamic` blocks pour les règles
+### 📝 Étape 4.2.4 - Version 3 : `dynamic` blocks pour les règles
 
 Le module NSG créé en 4.1 ne gère pas encore les règles de sécurité. Vous allez les ajouter en utilisant un **`dynamic` block**, qui permet de générer un nombre variable de blocs imbriqués à partir d'une liste.
 
@@ -520,7 +519,7 @@ Puis, dans `tp4-logic/main.tf`, générez dynamiquement les règles pour chaque 
 - Comment générer automatiquement une priorité unique pour chaque règle à partir de son index ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.2.4</summary>
+<details><summary>Solution - Étape 4.2.4</summary>
 {:/nomarkdown}
 
 Mise à jour de `modules/nsg/main.tf` avec le `dynamic` block :
@@ -605,7 +604,7 @@ terraform state show 'azurerm_network_security_group.nsg["prod"]'
 
 ---
 
-### 📝 Étape 4.2.5 — Intégration : module + for_each + dynamic
+### 📝 Étape 4.2.5 - Intégration : module + for_each + dynamic
 
 **Ce que vous devez faire :**
 
@@ -614,7 +613,7 @@ Revenez dans `tp4-nsg/dev/` et appelez le module NSG en lui passant des règles 
 Utilisez une expression `for` dans l'appel au module pour transformer la liste de ports en liste d'objets `security_rule` attendus par le module.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4.2.5</summary>
+<details><summary>Solution - Étape 4.2.5</summary>
 {:/nomarkdown}
 
 `dev/main.tf` avec appel du module et génération des règles :
@@ -676,12 +675,12 @@ terraform state show module.nsg_dev.azurerm_network_security_group.this
 - Règles gérées via `dynamic` block
 
 **Projet `tp4-logic/` :**
-- NSG créés via `for_each` sur une `map` — suppression d'une clé ne détruit que la ressource concernée
+- NSG créés via `for_each` sur une `map` - suppression d'une clé ne détruit que la ressource concernée
 - Règles générées dynamiquement depuis une liste de ports via une expression `for`
 - Vous pouvez expliquer **pourquoi `for_each` est préférable à `count`** pour des ressources identifiées métier
 
 **Projet `tp4-nsg/` :**
-- `dev/` et `prod/` n'ont plus de ressource NSG en dur — uniquement des appels `module`
+- `dev/` et `prod/` n'ont plus de ressource NSG en dur - uniquement des appels `module`
 - Les règles sont définies dans des `locals`, séparées de la logique d'appel
 
 </div>
@@ -691,7 +690,7 @@ terraform state show module.nsg_dev.azurerm_network_security_group.this
 ## 🧹 Nettoyage
 
 {::nomarkdown}
-<details><summary>Solution — Nettoyage</summary>
+<details><summary>Solution - Nettoyage</summary>
 {:/nomarkdown}
 
 ```bash
@@ -699,7 +698,7 @@ terraform state show module.nsg_dev.azurerm_network_security_group.this
 cd tp4-logic
 terraform destroy
 
-# Projet tp4-nsg — dans l'ordre
+# Projet tp4-nsg - dans l'ordre
 cd tp4-nsg/dev     && terraform destroy
 cd ../prod         && terraform destroy
 cd ../shared       && terraform destroy
