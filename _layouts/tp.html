@@ -43,14 +43,14 @@
     var sidebar = document.querySelector('.toc-sidebar');
     if (!main || !nav || !sidebar) return;
 
-    var headings = Array.from(main.querySelectorAll('h2, h3'));
+    var headings = Array.from(main.querySelectorAll('h2'));
     if (!headings.length) return;
 
     var ul = document.createElement('ul');
     headings.forEach(function (h, i) {
       if (!h.id) h.id = 'heading-' + i;
       var li = document.createElement('li');
-      li.className = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
+      li.className = 'toc-h2';
       var a = document.createElement('a');
       a.href = '#' + h.id;
       // Strip leading emoji/symbols — keep only from first letter/digit

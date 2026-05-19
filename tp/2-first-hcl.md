@@ -40,7 +40,7 @@ graph TD
 
 ---
 
-## 🗂️ Partie 2.1 - Infrastructure de base
+## 📝 Partie 2.1 - Infrastructure de base
 
 > **Point de départ :** un nouveau dossier vide. À la fin de cette partie, vous aurez un réseau fonctionnel sur Azure.
 
