@@ -62,9 +62,8 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 <details><summary>Solution — Étape 2</summary>
 {:/nomarkdown}
 
-Contenu du fichier `main.tf` :
-
-```hcl main.tf
+### **`main.tf`**
+```hcl
 terraform {
   required_providers {
     azurerm = {
