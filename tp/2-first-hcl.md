@@ -1,12 +1,28 @@
 ---
 layout: tp
 title: "TP 2 - Le langage HCL et le cycle de vie Terraform"
-objective: "Apprivoiser la syntaxe HCL, structurer un projet Terraform et déployer une infrastructure complète sur Azure."
 ---
 
 # 📦 Contexte
 
-Vous allez construire pas à pas une infrastructure Azure complète : réseau, machine virtuelle, disque, carte réseau. Le TP est découpé en quatre parties progressives. **Chaque partie s'appuie sur la précédente** — ne passez pas à la suivante sans avoir validé l'étape en cours avec votre formateur.
+Vous allez construire pas à pas une infrastructure Azure complète : réseau, machine virtuelle, disque, carte réseau. Le TP est découpé en quatre parties progressives. **Chaque partie s'appuie sur la précédente** - ne passez pas à la suivante sans avoir validé l'étape en cours.
+
+```mermaid
+graph TD
+    RG["🗂️ Resource Group\nrg-tp-terraform"]
+    VNET["🌐 Virtual Network\nvnet-tp"]
+    SUBNET["🔀 Subnet\nsnet-tp"]
+    NIC["🔌 Network Interface\nnic-tp"]
+    DISK["💾 Managed Disk\ndisk-tp"]
+    VM["🖥️ Virtual Machine\nvm-tp"]
+
+    RG --> VNET
+    VNET --> SUBNET
+    SUBNET --> NIC
+    RG --> DISK
+    NIC --> VM
+    DISK --> VM
+```
 
 ---
 
@@ -24,13 +40,13 @@ Vous allez construire pas à pas une infrastructure Azure complète : réseau, m
 
 ---
 
-## 🗂️ Partie 2.1 — Infrastructure de base
+## 🗂️ Partie 2.1 - Infrastructure de base
 
 > **Point de départ :** un nouveau dossier vide. À la fin de cette partie, vous aurez un réseau fonctionnel sur Azure.
 
 ---
 
-### 📝 Étape 2.1.1 — Créer la structure du projet
+### 📝 Étape 2.1.1 - Créer la structure du projet
 
 Un projet Terraform bien organisé ne tient pas dans un seul fichier. La convention courante est de séparer les responsabilités dès le départ.
 
@@ -38,10 +54,10 @@ Un projet Terraform bien organisé ne tient pas dans un seul fichier. La convent
 
 - Créez un dossier `tp2-infra/` et placez-vous dedans.
 - Créez les fichiers suivants (vides pour l'instant) :
-  - `main.tf` — ressources principales
-  - `providers.tf` — configuration du provider et du backend
-  - `variables.tf` — déclarations des variables (plus tard)
-  - `outputs.tf` — déclarations des outputs (plus tard)
+  - `main.tf` - ressources principales
+  - `providers.tf` - configuration du provider et du backend
+  - `variables.tf` - déclarations des variables (plus tard)
+  - `outputs.tf` - déclarations des outputs (plus tard)
 
 > 💡 Explorez la [documentation sur la structure recommandée](https://developer.hashicorp.com/terraform/language/files) d'un projet Terraform. Pourquoi séparer `providers.tf` de `main.tf` ?
 
@@ -50,7 +66,7 @@ Un projet Terraform bien organisé ne tient pas dans un seul fichier. La convent
 - Où Terraform stocke-t-il son état par défaut si aucun backend n'est configuré ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.1.1</summary>
+<details><summary>Solution - Étape 2.1.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -90,7 +106,7 @@ terraform init
 
 ---
 
-### 📝 Étape 2.1.2 — Resource Group, VNet et Subnet
+### 📝 Étape 2.1.2 - Resource Group, VNet et Subnet
 
 Vous allez créer les trois briques réseau fondamentales. Lisez attentivement la documentation de chaque ressource avant d'écrire la configuration.
 
@@ -98,9 +114,9 @@ Vous allez créer les trois briques réseau fondamentales. Lisez attentivement l
 
 Dans `main.tf`, déclarez les trois ressources suivantes en les référençant correctement entre elles :
 
-1. **`azurerm_resource_group`** — nommé `rg-tp2-dev`
-2. **`azurerm_virtual_network`** — nommé `vnet-tp2-dev`, dans le Resource Group ci-dessus, avec l'espace d'adressage `10.0.0.0/16`
-3. **`azurerm_subnet`** — nommé `snet-tp2-vm`, dans le VNet ci-dessus, avec le préfixe `10.0.1.0/24`
+1. **`azurerm_resource_group`** - nommé `rg-tp2-dev`
+2. **`azurerm_virtual_network`** - nommé `vnet-tp2-dev`, dans le Resource Group ci-dessus, avec l'espace d'adressage `10.0.0.0/16`
+3. **`azurerm_subnet`** - nommé `snet-tp2-vm`, dans le VNet ci-dessus, avec le préfixe `10.0.1.0/24`
 
 > 💡 Cherchez dans la [documentation azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) les arguments requis pour chaque ressource. Observez comment les ressources se **référencent entre elles** (`azurerm_virtual_network.xxx.name`).
 
@@ -109,7 +125,7 @@ Dans `main.tf`, déclarez les trois ressources suivantes en les référençant c
 - Que se passe-t-il si vous référencez une ressource qui n'existe pas encore dans Azure ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.1.2</summary>
+<details><summary>Solution - Étape 2.1.2</summary>
 {:/nomarkdown}
 
 Contenu de `main.tf` :
@@ -148,13 +164,13 @@ terraform apply
 
 ---
 
-## 🗂️ Partie 2.2 — Variables, VM et Outputs
+## 🗂️ Partie 2.2 - Variables, VM et Outputs
 
 > **Prérequis :** l'infrastructure de la partie 2.1 est déployée. Votre formateur va apporter du contexte sur les variables HCL avant cette partie.
 
 ---
 
-### 📝 Étape 2.2.1 — Ajouter NIC, Disque de données et VM
+### 📝 Étape 2.2.1 - Ajouter NIC, Disque de données et VM
 
 Vous allez compléter l'infrastructure avec les ressources de calcul.
 
@@ -162,10 +178,10 @@ Vous allez compléter l'infrastructure avec les ressources de calcul.
 
 Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctement sur le subnet existant :
 
-1. **`azurerm_network_interface`** — une NIC attachée au subnet `snet-tp2-vm`, avec une IP privée dynamique
-2. **`azurerm_managed_disk`** — un disque de données de 32 Go, type `Standard_LRS`
-3. **`azurerm_linux_virtual_machine`** — une VM Ubuntu 22.04 LTS, taille `Standard_B1s`, utilisant la NIC ci-dessus
-4. **`azurerm_virtual_machine_data_disk_attachment`** — pour attacher le disque à la VM
+1. **`azurerm_network_interface`** - une NIC attachée au subnet `snet-tp2-vm`, avec une IP privée dynamique
+2. **`azurerm_managed_disk`** - un disque de données de 32 Go, type `Standard_LRS`
+3. **`azurerm_linux_virtual_machine`** - une VM Ubuntu 22.04 LTS, taille `Standard_B1s`, utilisant la NIC ci-dessus
+4. **`azurerm_virtual_machine_data_disk_attachment`** - pour attacher le disque à la VM
 
 > 💡 Pour la VM, consultez la doc `azurerm_linux_virtual_machine`. Faites attention aux blocs `os_disk`, `source_image_reference` et à l'authentification. Pour l'attachement du disque, cherchez le `lun` (Logical Unit Number).
 
@@ -174,7 +190,7 @@ Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctem
 - Qu'est-ce qu'un `lun` dans le contexte d'un disque Azure ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.2.1</summary>
+<details><summary>Solution - Étape 2.2.1</summary>
 {:/nomarkdown}
 
 Ajout dans `main.tf` :
@@ -241,7 +257,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 
 ---
 
-### 📝 Étape 2.2.2 — Déclarer des variables avec validation
+### 📝 Étape 2.2.2 - Déclarer des variables avec validation
 
 Les valeurs en dur dans `main.tf` sont une mauvaise pratique. Vous allez les extraire en variables.
 
@@ -254,7 +270,7 @@ Dans `variables.tf`, déclarez au minimum les variables suivantes avec leur type
 | `location` | `string` | `"West Europe"` |
 | `environment` | `string` | `"dev"` |
 | `vm_size` | `string` | `"Standard_B1s"` |
-| `admin_password` | `string` | _(pas de défaut — sensible)_ |
+| `admin_password` | `string` | _(pas de défaut - sensible)_ |
 
 Ajoutez une **validation** sur `environment` pour n'accepter que `dev`, `staging` ou `prod`.
 
@@ -267,7 +283,7 @@ Refactorisez ensuite `main.tf` pour utiliser ces variables (`var.location`, `var
 - Pourquoi ne jamais mettre de valeur par défaut sur une variable de mot de passe ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.2.2</summary>
+<details><summary>Solution - Étape 2.2.2</summary>
 {:/nomarkdown}
 
 Contenu de `variables.tf` :
@@ -321,7 +337,7 @@ terraform plan -var="environment=recette"
 
 ---
 
-### 📝 Étape 2.2.3 — Déclarer des outputs
+### 📝 Étape 2.2.3 - Déclarer des outputs
 
 Les outputs permettent d'exposer des informations sur l'infrastructure après l'apply.
 
@@ -338,7 +354,7 @@ Après l'apply, consultez les outputs avec la commande dédiée.
 > 💡 L'attribut `private_ip_address` est exporté directement par `azurerm_network_interface`. Explorez les attributs disponibles dans la documentation de chaque ressource, section "Attributes Reference".
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.2.3</summary>
+<details><summary>Solution - Étape 2.2.3</summary>
 {:/nomarkdown}
 
 Contenu de `outputs.tf` :
@@ -373,15 +389,15 @@ terraform output vm_private_ip
 
 ---
 
-## 🗂️ Partie 2.3 — Data sources et dépendances explicites
+## 🗂️ Partie 2.3 - Data sources et dépendances explicites
 
 > **Prérequis :** la VM de la partie 2.2 est déployée. Votre formateur présentera le concept de `data source` avant cette partie.
 >
-> **Contexte :** une deuxième équipe doit installer **nginx** sur la VM existante. Elle travaille dans un **projet Terraform séparé** et n'a pas accès au code source de la partie 2.2 — elle doit interroger Azure pour retrouver les ressources.
+> **Contexte :** une deuxième équipe doit installer **nginx** sur la VM existante. Elle travaille dans un **projet Terraform séparé** et n'a pas accès au code source de la partie 2.2 - elle doit interroger Azure pour retrouver les ressources.
 
 ---
 
-### 📝 Étape 2.3.1 — Nouveau projet et data sources
+### 📝 Étape 2.3.1 - Nouveau projet et data sources
 
 **Ce que vous devez faire :**
 
@@ -396,7 +412,7 @@ terraform output vm_private_ip
 - Quelle est la différence entre `data.azurerm_linux_virtual_machine.vm.id` et `azurerm_linux_virtual_machine.vm.id` ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.3.1</summary>
+<details><summary>Solution - Étape 2.3.1</summary>
 {:/nomarkdown}
 
 ```bash
@@ -431,21 +447,21 @@ terraform plan
 
 ---
 
-### 📝 Étape 2.3.2 — Installer nginx avec `azurerm_virtual_machine_extension`
+### 📝 Étape 2.3.2 - Installer nginx avec `azurerm_virtual_machine_extension`
 
 **Ce que vous devez faire :**
 
 - Ajoutez dans `main.tf` une ressource `azurerm_virtual_machine_extension` qui installe nginx via un script bash.
 - Utilisez `depends_on` pour forcer l'exécution après la résolution du data source.
 
-> 💡 La ressource `azurerm_virtual_machine_extension` de type `CustomScript` permet d'exécuter un script shell. Consultez la [documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine_extension). Le champ `settings` attend du JSON — utilisez la fonction `jsonencode()`.
+> 💡 La ressource `azurerm_virtual_machine_extension` de type `CustomScript` permet d'exécuter un script shell. Consultez la [documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine_extension). Le champ `settings` attend du JSON - utilisez la fonction `jsonencode()`.
 
 **Questions de réflexion :**
 - Pourquoi utilise-t-on `depends_on` ici alors que la VM est déjà référencée via un `data` ?
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois ? L'extension est-elle réinstallée ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.3.2</summary>
+<details><summary>Solution - Étape 2.3.2</summary>
 {:/nomarkdown}
 
 Ajout dans `main.tf` :
@@ -476,7 +492,7 @@ terraform apply
 
 ---
 
-## 🗂️ Partie 2.4 — Projet final structuré
+## 🗂️ Partie 2.4 - Projet final structuré
 
 > **Prérequis :** les parties 2.1 et 2.2 sont terminées. Votre formateur abordera les conventions de nommage et la documentation avant cette partie.
 >
@@ -484,7 +500,7 @@ terraform apply
 
 ---
 
-### 📝 Étape 2.4.1 — Tags, documentation et conventions
+### 📝 Étape 2.4.1 - Tags, documentation et conventions
 
 **Ce que vous devez faire :**
 
@@ -497,7 +513,7 @@ terraform apply
 > 💡 La fonction [`merge()`](https://developer.hashicorp.com/terraform/language/functions/merge) permet de fusionner les tags communs avec des tags spécifiques à une ressource si nécessaire.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.4.1</summary>
+<details><summary>Solution - Étape 2.4.1</summary>
 {:/nomarkdown}
 
 Contenu de `locals.tf` :
@@ -515,7 +531,7 @@ locals {
 Exemple de ressource avec tags et commentaire :
 
 ```hcl
-# Resource Group principal — conteneur de toutes les ressources du projet
+# Resource Group principal - conteneur de toutes les ressources du projet
 resource "azurerm_resource_group" "rg" {
   name     = "rg-tp2-${var.environment}"
   location = var.location
@@ -531,20 +547,20 @@ Ajoutez `tags = local.common_tags` de la même façon sur `azurerm_virtual_netwo
 
 ---
 
-### 📝 Étape 2.4.2 — Expérimenter la dérive d'état
+### 📝 Étape 2.4.2 - Expérimenter la dérive d'état
 
 Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform est altéré. Procédez **dans l'ordre** et notez vos observations.
 
-**Exercice A — Supprimer le tfstate :**
+**Exercice A - Supprimer le tfstate :**
 
 1. Sauvegardez le fichier `terraform.tfstate` (copiez-le ailleurs).
 2. Supprimez `terraform.tfstate`.
 3. Lancez `terraform plan`. Qu'observez-vous ? Pourquoi ?
 4. Cherchez la commande `terraform import` dans la documentation. Réimportez le Resource Group.
 
-> ⚠️ Ne lancez **pas** `terraform apply` après avoir supprimé le tfstate sans avoir réimporté les ressources — cela créerait des doublons dans Azure.
+> ⚠️ Ne lancez **pas** `terraform apply` après avoir supprimé le tfstate sans avoir réimporté les ressources - cela créerait des doublons dans Azure.
 
-**Exercice B — Supprimer une ressource directement dans Azure :**
+**Exercice B - Supprimer une ressource directement dans Azure :**
 
 1. Restaurez votre tfstate.
 2. Supprimez **manuellement** le subnet dans le portail Azure.
@@ -553,12 +569,12 @@ Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform
 
 <div class="section tasks">
 
-Notez vos observations pour chaque exercice — votre formateur en fera une synthèse en groupe.
+Notez vos observations pour chaque exercice - votre formateur en fera une synthèse en groupe.
 
 </div>
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2.4.2</summary>
+<details><summary>Solution - Étape 2.4.2</summary>
 {:/nomarkdown}
 
 **Exercice A :**
@@ -572,11 +588,11 @@ terraform import azurerm_resource_group.rg \
   /subscriptions/<subscription_id>/resourceGroups/rg-tp2-dev
 ```
 
-Répétez l'import pour chaque ressource, puis relancez `terraform plan` — il ne devrait plus planifier de création.
+Répétez l'import pour chaque ressource, puis relancez `terraform plan` - il ne devrait plus planifier de création.
 
 **Exercice B :**
 
-Terraform détecte la dérive et planifie **uniquement** la recréation du subnet supprimé — pas des autres ressources. C'est l'idempotence en action.
+Terraform détecte la dérive et planifie **uniquement** la recréation du subnet supprimé - pas des autres ressources. C'est l'idempotence en action.
 
 ```bash
 terraform apply  # recrée uniquement le subnet manquant
@@ -599,7 +615,7 @@ terraform apply  # recrée uniquement le subnet manquant
 | `providers.tf` | Provider azurerm + backend local |
 | `variables.tf` | Variables typées, décrites, validées |
 | `locals.tf` | Tags communs centralisés |
-| `main.tf` | RG, VNet, Subnet, NIC, Disk, VM, Attachment — commentés |
+| `main.tf` | RG, VNet, Subnet, NIC, Disk, VM, Attachment - commentés |
 | `outputs.tf` | IP privée, nom du RG, ID VM |
 | `terraform.tfvars` | Valeurs sensibles (non commité) |
 | `README.md` | Description de l'architecture |
@@ -615,7 +631,7 @@ Toutes les ressources sont visibles dans le portail Azure avec les tags `environ
 Détruisez les deux projets dans l'ordre pour éviter des erreurs de dépendance.
 
 {::nomarkdown}
-<details><summary>Solution — Nettoyage</summary>
+<details><summary>Solution - Nettoyage</summary>
 {:/nomarkdown}
 
 ```bash
