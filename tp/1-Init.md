@@ -51,7 +51,7 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 - Ce fichier doit contenir **trois blocs distincts** :
   1. Un bloc **`terraform`** qui déclare le provider requis (`azurerm`) et contraint sa version.
   2. Un bloc **`provider`** qui configure le provider Azure.
-  3. Un bloc **`resource`** qui déclare un Resource Group Azure nommé `rg-tp-terraform` dans la région `West Europe`.
+  3. Un bloc **`resource`** qui déclare un Resource Group Azure nommé `tp-terraform` dans la région `West Europe`.
 
 > 💡 Consultez la [documentation du provider azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) pour trouver le nom exact du type de ressource et ses arguments obligatoires. Cherchez `azurerm_resource_group`.
 
@@ -62,8 +62,9 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 <details><summary>Solution — Étape 2</summary>
 {:/nomarkdown}
 
-### **`main.tf`**
-```hcl
+Contenu du fichier `main.tf` :
+
+```hcl main.tf
 terraform {
   required_providers {
     azurerm = {
@@ -78,12 +79,12 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "tp" {
-  name     = "rg-tp-terraform"
+  name     = "tp-terraform"
   location = "West Europe"
 }
 ```
 
-> `~> 3.0` signifie "toute version >= 3.0 et < 4.0". Cela évite les breaking changes lors d'une montée de version majeure.
+> `~> 4.0` signifie "toute version >= 4.0 et < 5.0". Cela évite les breaking changes lors d'une montée de version majeure.
 
 
 {::nomarkdown}
@@ -102,15 +103,10 @@ Terraform a besoin de s'authentifier auprès d'Azure pour créer des ressources.
 - Connectez-vous à Azure via la CLI.
 - Vérifiez que vous êtes bien positionné sur le bon abonnement (subscription). Si vous en avez plusieurs, sélectionnez le bon.
 
-> 💡 Terraform utilise automatiquement les credentials d'Azure CLI lorsqu'aucune autre méthode d'authentification n'est configurée dans le bloc `provider`.
-
-**Questions de réflexion :**
-- Pourquoi ne met-on pas les credentials (identifiant, mot de passe) directement dans le fichier `.tf` ?
-- Quelle méthode d'authentification serait préférable dans un pipeline CI/CD ?
-
-{::nomarkdown}
-<details><summary>Solution — Étape 3</summary>
-{:/nomarkdown}
+**Verification de l'installation :**
+```bash
+az version
+```
 
 **Connexion interactive :**
 ```bash
@@ -128,11 +124,6 @@ az account list --output table
 az account set --subscription "<nom-ou-id-de-labonnement>"
 ```
 
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
 ---
 
 ## 📝 Étape 4 — Initialiser et appliquer la configuration
@@ -148,8 +139,8 @@ Le workflow Terraform suit toujours le même enchaînement : **init → plan →
 > 💡 Cherchez dans la documentation Terraform les commandes `terraform init`, `terraform plan` et `terraform apply`. Prêtez attention aux flags disponibles (`-out`, `-auto-approve`, `-var`…).
 
 **Questions de réflexion :**
+- Explorer le plan généré avant l'apply.
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois sans modifier le fichier `.tf` ?
-- À quoi sert le flag `-out` de `terraform plan` ?
 
 {::nomarkdown}
 <details><summary>Solution — Étape 4</summary>
@@ -165,11 +156,6 @@ terraform plan
 # 3. Appliquer la configuration
 terraform apply
 ```
-
-Tapez `yes` lorsque la confirmation vous est demandée.
-
-> Si vous relancez `apply` sans modifier le fichier, Terraform répond `No changes. Infrastructure is up-to-date.` — c'est le principe d'**idempotence**.
-
 
 {::nomarkdown}
 </details>
@@ -192,7 +178,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 |---|---|
 | `.terraform/` | Que contient ce dossier ? Pourquoi ne doit-il pas être commité dans Git ? |
 | `.terraform.lock.hcl` | À quoi ressemble son contenu ? Quel est son rôle par rapport à la version du provider ? |
-| `terraform.tfstate` | Ouvrez ce fichier. Que représente-t-il ? Quel risque pose-t-il s'il est partagé tel quel dans un dépôt Git ? |
+| `terraform.tfstate` | Ouvrez ce fichier. Que représente-t-il ? Comparer la description de la ressource avec la documentation `azurem_resource_group` |
 
 </div>
 
@@ -202,11 +188,6 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 <details><summary>Solution — Étape 5</summary>
 {:/nomarkdown}
 
-**Lister les fichiers :**
-```bash
-ls -la
-```
-
 **Rôle de chaque élément :**
 
 | Élément | Rôle |
@@ -215,28 +196,9 @@ ls -la
 | `.terraform.lock.hcl` | Fichier de verrouillage des versions exactes des providers. **Doit** être commité pour garantir la reproductibilité. |
 | `terraform.tfstate` | Représente l'état courant de l'infrastructure gérée par Terraform (mapping entre la config et les ressources réelles). Peut contenir des données sensibles — à ne pas commiter, à stocker dans un **backend distant** (ex : Azure Blob Storage) en production. |
 
-**Vérifier la ressource créée :**
-```bash
-terraform show
-```
-
-
 {::nomarkdown}
 </details>
 {:/nomarkdown}
-
----
-
-## ✅ Résultat attendu
-
-<div class="section objective">
-
-- Le Resource Group `rg-tp-terraform` est visible dans le [portail Azure](https://portal.azure.com).
-- La commande `terraform show` affiche les attributs de la ressource créée.
-- Vous êtes en mesure d'expliquer le rôle de chaque fichier généré.
-- Vous avez répondu aux questions de réflexion de chaque étape.
-
-</div>
 
 ---
 
@@ -251,9 +213,6 @@ Pour supprimer les ressources créées et éviter des coûts inutiles, détruise
 ```bash
 terraform destroy
 ```
-
-Tapez `yes` pour confirmer. Vérifiez ensuite dans le portail Azure que le Resource Group a bien été supprimé.
-
 
 {::nomarkdown}
 </details>
