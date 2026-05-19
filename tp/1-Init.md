@@ -1,7 +1,6 @@
 ---
 layout: tp
 title: "TP 1 - Prise en main de Terraform"
-objective: "Installer Terraform, créer un premier fichier de configuration, connecter Azure et provisionner un Resource Group."
 ---
 
 # 📦 Contexte
@@ -33,40 +32,11 @@ Terraform est un outil open-source maintenu par HashiCorp. Il s'installe comme u
 - Rendez-vous sur la [documentation officielle d'installation](https://developer.hashicorp.com/terraform/install) et choisissez la méthode adaptée à votre système d'exploitation.
 - Une fois installé, vérifiez que l'outil est accessible depuis votre terminal en interrogeant sa version.
 
-> 💡 Si vous êtes sur macOS, explorez les gestionnaires de paquets disponibles (`brew`, `tfenv`…). Sur Linux, comparez l'installation via le dépôt HashiCorp et le téléchargement manuel.
-
-**Questions de réflexion :**
-- Quelle est la différence entre installer Terraform via un gestionnaire de paquets et le télécharger manuellement ?
-- Comment s'assurer que la version installée est compatible avec un projet existant ?
-
-{::nomarkdown}
-<details><summary>Solution — Étape 1</summary>
-{:/nomarkdown}
-
-**Installation sur macOS (Homebrew) :**
-```bash
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-```
-
-**Installation sur Ubuntu/Debian :**
-```bash
-wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install terraform
-```
-
-**Vérification :**
 ```bash
 terraform -version
 ```
 
-> La version affichée doit être >= 1.5.
-
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
+> La version affichée doit être >= 1.15.
 
 ---
 
@@ -86,25 +56,20 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 > 💡 Consultez la [documentation du provider azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) pour trouver le nom exact du type de ressource et ses arguments obligatoires. Cherchez `azurerm_resource_group`.
 
 **Questions de réflexion :**
-- Quelle est la différence entre un *type de ressource* (`azurerm_resource_group`) et le *nom local* que vous lui donnez (`"tp"`) ?
 - Pourquoi est-il recommandé de contraindre la version d'un provider ?
 
 {::nomarkdown}
 <details><summary>Solution — Étape 2</summary>
 {:/nomarkdown}
 
-```bash
-mkdir tp-terraform && cd tp-terraform
-```
-
 Contenu du fichier `main.tf` :
 
-```hcl
+```hcl main.tf
 terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
 }
