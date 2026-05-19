@@ -23,7 +23,7 @@ Votre équipe adopte une approche **Infrastructure as Code** avec Terraform. Dan
 
 ---
 
-## 📝 Étape 1 — Installer Terraform
+## 📝 Étape 1 - Installer Terraform
 
 Terraform est un outil open-source maintenu par HashiCorp. Il s'installe comme un binaire unique sur votre machine.
 
@@ -40,7 +40,7 @@ terraform -version
 
 ---
 
-## 📝 Étape 2 — Créer son premier fichier `.tf`
+## 📝 Étape 2 - Créer son premier fichier `.tf`
 
 Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (HashiCorp Configuration Language)**. Il déclare les ressources que vous souhaitez créer.
 
@@ -59,7 +59,7 @@ Un fichier `.tf` est un fichier de configuration Terraform écrit en **HCL (Hash
 - Pourquoi est-il recommandé de contraindre la version d'un provider ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 2</summary>
+<details><summary>Solution - Étape 2</summary>
 {:/nomarkdown}
 
 Contenu du fichier `main.tf` :
@@ -92,7 +92,7 @@ resource "azurerm_resource_group" "tp" {
 
 ---
 
-## 📝 Étape 3 — Configurer la connexion Azure
+## 📝 Étape 3 - Configurer la connexion Azure
 
 Terraform a besoin de s'authentifier auprès d'Azure pour créer des ressources. Plusieurs méthodes existent (Service Principal, Managed Identity, CLI…). Dans ce TP, nous utilisons **Azure CLI**, la méthode la plus simple en local.
 
@@ -125,14 +125,14 @@ az account set --subscription "<nom-ou-id-de-labonnement>"
 
 ---
 
-## 📝 Étape 4 — Initialiser et appliquer la configuration
+## 📝 Étape 4 - Initialiser et appliquer la configuration
 
 Le workflow Terraform suit toujours le même enchaînement : **init → plan → apply**. Chaque étape a un rôle précis.
 
 **Ce que vous devez faire :**
 
 - **Initialisez** votre répertoire de travail. Cette commande prépare l'environnement local : elle télécharge le provider déclaré et crée les fichiers internes nécessaires.
-- **Planifiez** l'exécution. Cette commande analyse votre configuration et affiche ce qui va être créé, modifié ou supprimé — sans rien toucher à Azure. Lisez attentivement la sortie.
+- **Planifiez** l'exécution. Cette commande analyse votre configuration et affiche ce qui va être créé, modifié ou supprimé - sans rien toucher à Azure. Lisez attentivement la sortie.
 - **Appliquez** la configuration. Cette commande exécute réellement les changements sur Azure. Une confirmation vous sera demandée.
 
 > 💡 Cherchez dans la documentation des commandes Terraform les différentes options disponibles. Prêtez attention aux flags disponibles (`-out`, `-auto-approve`, `-var`…).
@@ -141,7 +141,7 @@ Le workflow Terraform suit toujours le même enchaînement : **init → plan →
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois sans modifier le fichier `.tf` ?
 
 {::nomarkdown}
-<details><summary>Solution — Étape 4</summary>
+<details><summary>Solution - Étape 4</summary>
 {:/nomarkdown}
 
 ```bash
@@ -161,7 +161,7 @@ terraform apply
 
 ---
 
-## 📝 Étape 5 — Explorer les fichiers générés
+## 📝 Étape 5 - Explorer les fichiers générés
 
 Après l'initialisation et l'application, Terraform a créé plusieurs fichiers et dossiers dans votre répertoire de travail. Chacun joue un rôle fondamental.
 
@@ -183,7 +183,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 > 💡 Consultez la [documentation sur le state Terraform](https://developer.hashicorp.com/terraform/language/state) et la page sur le [`.terraform.lock.hcl`](https://developer.hashicorp.com/terraform/language/files/dependency-lock) pour approfondir.
 
 {::nomarkdown}
-<details><summary>Solution — Étape 5</summary>
+<details><summary>Solution - Étape 5</summary>
 {:/nomarkdown}
 
 **Rôle de chaque élément :**
@@ -192,7 +192,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 |---|---|
 | `.terraform/` | Cache local contenant les binaires des providers téléchargés. À ajouter dans `.gitignore`. |
 | `.terraform.lock.hcl` | Fichier de verrouillage des versions exactes des providers. **Doit** être commité pour garantir la reproductibilité. |
-| `terraform.tfstate` | Représente l'état courant de l'infrastructure gérée par Terraform (mapping entre la config et les ressources réelles). Peut contenir des données sensibles — à ne pas commiter. |
+| `terraform.tfstate` | Représente l'état courant de l'infrastructure gérée par Terraform (mapping entre la config et les ressources réelles). Peut contenir des données sensibles - à ne pas commiter. |
 
 {::nomarkdown}
 </details>
@@ -205,7 +205,7 @@ Après l'initialisation et l'application, Terraform a créé plusieurs fichiers 
 Pour supprimer les ressources créées et éviter des coûts inutiles, détruisez l'infrastructure gérée par Terraform. Cherchez la commande correspondante dans la documentation.
 
 {::nomarkdown}
-<details><summary>Solution — Nettoyage</summary>
+<details><summary>Solution - Nettoyage</summary>
 {:/nomarkdown}
 
 ```bash
