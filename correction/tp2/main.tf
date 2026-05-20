@@ -42,7 +42,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-tp2-dev"
   location                        = azurerm_resource_group.rg.location
   resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_B1s"
+  size                            = "Standard_B1ms"
   admin_username                  = "adminuser"
   admin_password                  = "P@ssw0rd1234!"
   disable_password_authentication = false

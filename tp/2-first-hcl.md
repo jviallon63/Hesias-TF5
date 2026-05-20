@@ -246,8 +246,6 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 }
 ```
 
-> 💡 Pour la VM, consultez la doc `azurerm_linux_virtual_machine`. Faites attention aux blocs `os_disk`, `source_image_reference` et à l'authentification. Pour l'attachement du disque, cherchez le `lun` (Logical Unit Number).
-
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.1</summary>
 {:/nomarkdown}
@@ -280,7 +278,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-tp2-dev"
   location                        = azurerm_resource_group.rg.location
   resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_B1s"
+  size                            = "Standard_F1alds_v7"
   admin_username                  = "adminuser"
   admin_password                  = "P@ssw0rd1234!"
   disable_password_authentication = false
@@ -455,7 +453,7 @@ terraform output vm_private_ip
 
 ## 🗂️ Partie 2.3 - Data sources et dépendances explicites
 
-> **Prérequis :** la VM de la partie 2.2 est déployée. Votre formateur présentera le concept de `data source` avant cette partie.
+> **Prérequis :** la VM de la partie 2.2 est déployée.
 >
 > **Contexte :** une deuxième équipe doit installer **nginx** sur la VM existante. Elle travaille dans un **projet Terraform séparé** et n'a pas accès au code source de la partie 2.2 - elle doit interroger Azure pour retrouver les ressources.
 
@@ -469,19 +467,12 @@ terraform output vm_private_ip
 - Utilisez des **data sources** (`data`) pour retrouver la VM et le Resource Group créés en 2.2, sans les recréer.
 - Cherchez dans la doc : `azurerm_resource_group` (data source), `azurerm_linux_virtual_machine` (data source).
 
-> 💡 Un `data` source **lit** une ressource existante dans Azure. Il ne la crée pas et ne la gère pas. C'est la différence fondamentale avec un bloc `resource`.
-
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
-- Quelle est la différence entre `data.azurerm_linux_virtual_machine.vm.id` et `azurerm_linux_virtual_machine.vm.id` ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.1</summary>
 {:/nomarkdown}
-
-```bash
-mkdir tp2-nginx && cd tp2-nginx
-```
 
 `providers.tf` : identique à la partie 2.1.
 
@@ -518,10 +509,25 @@ terraform plan
 - Ajoutez dans `main.tf` une ressource `azurerm_virtual_machine_extension` qui installe nginx via un script bash.
 - Utilisez `depends_on` pour forcer l'exécution après la résolution du data source.
 
-> 💡 La ressource `azurerm_virtual_machine_extension` de type `CustomScript` permet d'exécuter un script shell. Consultez la [documentation](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine_extension). Le champ `settings` attend du JSON - utilisez la fonction `jsonencode()`.
+Template `main.tf` :
+
+```hcl
+resource "azurerm_virtual_machine_extension" "nginx" {
+  name                 = "install-nginx"
+  virtual_machine_id   = ...
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.1"
+
+  settings = jsonencode({
+    commandToExecute = "apt-get update && apt-get install -y nginx && systemctl enable nginx && systemctl start nginx"
+  })
+
+  depends_on = ...
+}
+```
 
 **Questions de réflexion :**
-- Pourquoi utilise-t-on `depends_on` ici alors que la VM est déjà référencée via un `data` ?
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois ? L'extension est-elle réinstallée ?
 
 {::nomarkdown}
@@ -558,9 +564,9 @@ terraform apply
 
 ## 🗂️ Partie 2.4 - Projet final structuré
 
-> **Prérequis :** les parties 2.1 et 2.2 sont terminées. Votre formateur abordera les conventions de nommage et la documentation avant cette partie.
+> **Prérequis :** les parties 2.1 et 2.2 sont terminées.
 >
-> Vous allez **repartir du projet `tp2-infra`** et le transformer en un projet de qualité production.
+> Vous allez **repartir du projet `tp2-infra` (Partie 2.2) ** et le transformer en un projet de qualité production.
 
 ---
 
@@ -568,11 +574,10 @@ terraform apply
 
 **Ce que vous devez faire :**
 
-- Créez un fichier `locals.tf` avec un bloc `locals` centralisant les tags communs : `environment`, `project = "tp2"`, `managed_by = "terraform"`.
-- Appliquez ces tags sur toutes les ressources Azure qui les supportent via `local.common_tags`.
-- Ajoutez un **commentaire de description** au-dessus de chaque bloc `resource`.
+- Créez un fichier `locals.tf` avec un bloc `locals` centralisant les tags communs : `environment`, `project`, `managed_by = "terraform"` et `owner`.
+- Appliquez ces tags sur toutes les ressources Azure qui les supportent.
 - Vérifiez que tous les labels locaux Terraform suivent la convention **`snake_case`** (`snet_vm`, `data_disk`, etc.).
-- Créez un `README.md` décrivant l'architecture, les prérequis et les commandes de déploiement.
+- Créez un `README.md` (Installez d'abord terraform-docs !)
 
 > 💡 La fonction [`merge()`](https://developer.hashicorp.com/terraform/language/functions/merge) permet de fusionner les tags communs avec des tags spécifiques à une ressource si nécessaire.
 
@@ -588,6 +593,7 @@ locals {
     environment = var.environment
     project     = "tp2"
     managed_by  = "terraform"
+    owner       = "me"
   }
 }
 ```
@@ -595,7 +601,6 @@ locals {
 Exemple de ressource avec tags et commentaire :
 
 ```hcl
-# Resource Group principal - conteneur de toutes les ressources du projet
 resource "azurerm_resource_group" "rg" {
   name     = "rg-tp2-${var.environment}"
   location = var.location
@@ -605,13 +610,17 @@ resource "azurerm_resource_group" "rg" {
 
 Ajoutez `tags = local.common_tags` de la même façon sur `azurerm_virtual_network`, `azurerm_network_interface`, `azurerm_managed_disk` et `azurerm_linux_virtual_machine`.
 
+```bash
+terraform-docs markdown table . > README.md
+```
+
 {::nomarkdown}
 </details>
 {:/nomarkdown}
 
 ---
 
-### 🗂️ Étape 2.5 - Expérimenter la dérive d'état
+## 🗂️ Étape 2.5 - Expérimenter la dérive d'état
 
 Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform est altéré. Procédez **dans l'ordre** et notez vos observations.
 
@@ -668,48 +677,8 @@ terraform apply  # recrée uniquement le subnet manquant
 
 ---
 
-## ✅ Résultat attendu
-
-<div class="section objective">
-
-À la fin du TP 2, votre projet `tp2-infra/` doit contenir :
-
-| Fichier | Contenu |
-|---|---|
-| `providers.tf` | Provider azurerm + backend local |
-| `variables.tf` | Variables typées, décrites, validées |
-| `locals.tf` | Tags communs centralisés |
-| `main.tf` | RG, VNet, Subnet, NIC, Disk, VM, Attachment - commentés |
-| `outputs.tf` | IP privée, nom du RG, ID VM |
-| `terraform.tfvars` | Valeurs sensibles (non commité) |
-| `README.md` | Description de l'architecture |
-
-Toutes les ressources sont visibles dans le portail Azure avec les tags `environment`, `project` et `managed_by`.
-
-</div>
-
----
-
 ## 🧹 Nettoyage
 
 Détruisez les deux projets dans l'ordre pour éviter des erreurs de dépendance.
 
-{::nomarkdown}
-<details><summary>Solution - Nettoyage</summary>
-{:/nomarkdown}
-
-```bash
-# 1. Détruire le projet nginx en premier (dépend de la VM)
-cd tp2-nginx
-terraform destroy
-
-# 2. Détruire l'infrastructure principale
-cd ../tp2-infra
-terraform destroy
-```
-
 Vérifiez dans le portail Azure que le Resource Group `rg-tp2-dev` a bien été supprimé.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
