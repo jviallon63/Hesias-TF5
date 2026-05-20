@@ -184,7 +184,7 @@ terraform apply
 
 ## 🗂️ Partie 2.2 - Variables, VM et Outputs
 
-> **Prérequis :** l'infrastructure de la partie 2.1 est déployée. Votre formateur va apporter du contexte sur les variables HCL avant cette partie.
+> **Prérequis :** l'infrastructure de la partie 2.1 est déployée.
 
 ---
 
@@ -195,17 +195,58 @@ Vous allez compléter l'infrastructure avec les ressources de calcul.
 **Ce que vous devez faire :**
 
 Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctement sur le subnet existant :
+- **`azurerm_network_interface`** - une NIC attachée au subnet `snet-tp2-vm`, avec une IP privée dynamique
+- **`azurerm_managed_disk`** - un disque de données de 32 Go, type `Standard_LRS`
+- **`azurerm_linux_virtual_machine`** - une VM Ubuntu 22.04 LTS, taille `Standard_B1s`, utilisant la NIC ci-dessus
+- **`azurerm_virtual_machine_data_disk_attachment`** - pour attacher le disque à la VM
 
-1. **`azurerm_network_interface`** - une NIC attachée au subnet `snet-tp2-vm`, avec une IP privée dynamique
-2. **`azurerm_managed_disk`** - un disque de données de 32 Go, type `Standard_LRS`
-3. **`azurerm_linux_virtual_machine`** - une VM Ubuntu 22.04 LTS, taille `Standard_B1s`, utilisant la NIC ci-dessus
-4. **`azurerm_virtual_machine_data_disk_attachment`** - pour attacher le disque à la VM
+Template `main.tf` : 
+
+```hcl
+resource "azurerm_network_interface" "nic" {
+  ...
+
+  ip_configuration {
+    name                          = "internal"
+    ...
+  }
+}
+
+resource "azurerm_managed_disk" "data_disk" {
+  ...
+  create_option        = "Empty"
+  disk_size_gb         = 32
+}
+
+resource "azurerm_linux_virtual_machine" "vm" {
+  ...
+  disable_password_authentication = false
+
+  network_interface_ids = ...
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
+  managed_disk_id    = ...
+  virtual_machine_id = ...
+  lun                = 0
+  caching            = "ReadWrite"
+
+}
+```
 
 > 💡 Pour la VM, consultez la doc `azurerm_linux_virtual_machine`. Faites attention aux blocs `os_disk`, `source_image_reference` et à l'authentification. Pour l'attachement du disque, cherchez le `lun` (Logical Unit Number).
-
-**Questions de réflexion :**
-- Pourquoi utiliser `disable_password_authentication = false` est déconseillé en production ?
-- Qu'est-ce qu'un `lun` dans le contexte d'un disque Azure ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.1</summary>
@@ -281,7 +322,7 @@ Les valeurs en dur dans `main.tf` sont une mauvaise pratique. Vous allez les ext
 
 **Ce que vous devez faire :**
 
-Dans `variables.tf`, déclarez au minimum les variables suivantes avec leur type, leur description et une valeur par défaut :
+Créer `variables.tf`, déclarez au minimum les variables suivantes avec leur type, leur description et une valeur par défaut :
 
 | Variable | Type | Exemple |
 |---|---|---|
@@ -290,15 +331,14 @@ Dans `variables.tf`, déclarez au minimum les variables suivantes avec leur type
 | `vm_size` | `string` | `"Standard_B1s"` |
 | `admin_password` | `string` | _(pas de défaut - sensible)_ |
 
-Ajoutez une **validation** sur `environment` pour n'accepter que `dev`, `staging` ou `prod`.
+Ajoutez une **validation** sur `location` pour n'accepter que `"West Europe"`.
 
-Refactorisez ensuite `main.tf` pour utiliser ces variables (`var.location`, `var.environment`, etc.).
+Refactorisez ensuite `main.tf` pour utiliser ces variables.
 
-> 💡 Consultez la doc sur les [Custom Conditions](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions). Testez un passage de valeur invalide : `terraform plan -var="environment=recette"`.
+> 💡 Consultez la doc sur les [Custom Conditions](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions). Testez un passage de valeur invalide : `terraform plan -var="location="North Europe"`.
 
 **Questions de réflexion :**
-- Comment passer une variable depuis la ligne de commande ? Depuis un fichier `.tfvars` ?
-- Pourquoi ne jamais mettre de valeur par défaut sur une variable de mot de passe ?
+- Comment passer une variable depuis la ligne de commande ? Et depuis un fichier `.tfvars` ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.2</summary>
@@ -311,6 +351,11 @@ variable "location" {
   type        = string
   description = "Région Azure pour toutes les ressources"
   default     = "West Europe"
+  
+  validation {
+    condition     = contains(["West Europe"], var.location)
+    error_message = "La location ne peut être que 'West Europe'."
+  }
 }
 
 variable "environment" {
@@ -361,7 +406,7 @@ Les outputs permettent d'exposer des informations sur l'infrastructure après l'
 
 **Ce que vous devez faire :**
 
-Dans `outputs.tf`, déclarez au minimum :
+Créez `outputs.tf`, déclarez au minimum :
 
 1. L'**adresse IP privée** de la VM (depuis la NIC)
 2. Le **nom du Resource Group** créé
@@ -398,6 +443,7 @@ Après apply :
 
 ```bash
 terraform output
+terraform output -json
 terraform output vm_private_ip
 ```
 
