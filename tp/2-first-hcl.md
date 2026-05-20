@@ -469,6 +469,7 @@ terraform output vm_private_ip
 
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
+- Est-ce que `depends_on` est utile dans ce cas ? Pourquoi ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.1</summary>
