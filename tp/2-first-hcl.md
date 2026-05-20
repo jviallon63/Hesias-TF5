@@ -53,26 +53,26 @@ Un projet Terraform bien organisé ne tient pas dans un seul fichier. La convent
 **Ce que vous devez faire :**
 
 - Créez un dossier `tp2-infra/` et placez-vous dedans.
-- Créez les fichiers suivants (vides pour l'instant) :
-  - `main.tf` - ressources principales
-  - `providers.tf` - configuration du provider et du backend
-  - `variables.tf` - déclarations des variables (plus tard)
-  - `outputs.tf` - déclarations des outputs (plus tard)
+- Créez `providers.tf` avec la configuration du provider et du backend. A partir du template ci-dessous
 
-> 💡 Explorez la [documentation sur la structure recommandée](https://developer.hashicorp.com/terraform/language/files) d'un projet Terraform. Pourquoi séparer `providers.tf` de `main.tf` ?
+```hcl
+terraform {
+  required_providers {
+    ...
+  }
 
-**Questions de réflexion :**
-- Quelle est la différence entre un **backend local** et un **backend distant** ?
-- Où Terraform stocke-t-il son état par défaut si aucun backend n'est configuré ?
+  # Backend local explicite (par défaut, mais bonne pratique de le déclarer)
+  ...
+}
+
+provider "azurerm" {
+  features {}
+}
+```
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.1</summary>
 {:/nomarkdown}
-
-```bash
-mkdir tp2-infra && cd tp2-infra
-touch main.tf providers.tf variables.tf outputs.tf
-```
 
 Contenu de `providers.tf` :
 
@@ -81,7 +81,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
 
@@ -108,21 +108,41 @@ terraform init
 
 ### 📝 Étape 2.1.2 - Resource Group, VNet et Subnet
 
-Vous allez créer les trois briques réseau fondamentales. Lisez attentivement la documentation de chaque ressource avant d'écrire la configuration.
+Vous allez créer les trois briques réseau fondamentales. Lisez la documentation de chaque ressource avant d'écrire la configuration.
 
 **Ce que vous devez faire :**
 
-Dans `main.tf`, déclarez les trois ressources suivantes en les référençant correctement entre elles :
+Créez `main.tf` et déclarez les trois ressources suivantes:
+- **`azurerm_resource_group`** - nommé `rg-tp2-dev`
+- **`azurerm_virtual_network`** - nommé `vnet-tp2-dev`, avec l'espace d'adressage `10.0.0.0/16`
+- **`azurerm_subnet`** - nommé `snet-tp2-vm`, avec le préfixe `10.0.1.0/24`
 
-1. **`azurerm_resource_group`** - nommé `rg-tp2-dev`
-2. **`azurerm_virtual_network`** - nommé `vnet-tp2-dev`, dans le Resource Group ci-dessus, avec l'espace d'adressage `10.0.0.0/16`
-3. **`azurerm_subnet`** - nommé `snet-tp2-vm`, dans le VNet ci-dessus, avec le préfixe `10.0.1.0/24`
+Template `main.tf` : 
 
-> 💡 Cherchez dans la [documentation azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) les arguments requis pour chaque ressource. Observez comment les ressources se **référencent entre elles** (`azurerm_virtual_network.xxx.name`).
+```hcl
+resource "azurerm_resource_group" "rg" {
+ ...
+}
+
+resource "azurerm_virtual_network" ... {
+  name                = ...
+  location            = ...
+  resource_group_name = ...
+  # Espace d'adressage 10.0.0.0/16
+}
+
+resource "azurerm_subnet" ... {
+  ...
+  # préfixe du subnet : 10.0.1.0/24
+}
+```
+
+> 💡 Cherchez dans la [documentation azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) les arguments requis pour chaque ressource. Observez comment les ressources se **référencent entre elles**.
 
 **Questions de réflexion :**
 - Comment Terraform détermine-t-il l'ordre de création des ressources ?
-- Que se passe-t-il si vous référencez une ressource qui n'existe pas encore dans Azure ?
+- Quel est la différence entre le nom `azurerm_resource_group rg` et `name = rg-tp2-dev` ?
+- Comment créer un second subnet attaché au vnet `vnet-tp2-dev` ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.2</summary>
@@ -155,8 +175,6 @@ resource "azurerm_subnet" "snet_vm" {
 terraform plan
 terraform apply
 ```
-
-> Les références comme `azurerm_resource_group.rg.location` créent des **dépendances implicites** : Terraform construit automatiquement le graphe d'exécution.
 
 {::nomarkdown}
 </details>
