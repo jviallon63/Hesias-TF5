@@ -579,6 +579,9 @@ terraform apply
 
 > 💡 La fonction [`merge()`](https://developer.hashicorp.com/terraform/language/functions/merge) permet de fusionner les tags communs avec des tags spécifiques à une ressource si nécessaire.
 
+**Questions de réflexion :**
+- Pourquoi il est déconseillé de renommer les ressources en suivant la convention `snake_case` à ce moment là ? 
+
 {::nomarkdown}
 <details><summary>Solution - Étape 2.4.1</summary>
 {:/nomarkdown}
