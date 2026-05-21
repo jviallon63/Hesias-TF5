@@ -631,7 +631,8 @@ Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform
 2. Lancez `terraform plan`. Que propose Terraform ?
 3. Lancez `terraform apply`. Que se passe-t-il ?
 
-**Exercice A - Supprimer le tfstate :**
+
+**Exercice B - Supprimer le tfstate :**
 
 1. Sauvegardez le fichier `terraform.tfstate`.
 2. Supprimez `terraform.tfstate`.
