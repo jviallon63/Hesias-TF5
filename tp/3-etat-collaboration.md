@@ -269,6 +269,7 @@ Pour chaque environnement (`staging/`, `prod/`) :
 
 Template de création d'une NSG : 
 
+```hcl
 resource "azurerm_network_security_group" "nsg_staging" {
   name                = "nsg-tp3-staging"
   location            = ...
@@ -295,6 +296,7 @@ resource "azurerm_subnet_network_security_group_association" "staging" {
 
 **Questions de réflexion :**
 - Pourquoi utilise-t-on un data source pour le subnet plutôt qu'une référence directe ?
+- Quel est l'inconvenient de cette solution ? Imaginez une infrastructure avec x subnets et chacun des dizaines de NSG.
 
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2.3</summary>
