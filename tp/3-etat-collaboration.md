@@ -60,6 +60,7 @@ resource "azurerm_storage_container" "tfstate" {
 
 **Questions de réflexion :**
 - Pourquoi ne peut-on pas utiliser un backend distant pour stocker le state du Storage Account lui-même ?
+- Pourquoi nous n'activons pas le locking sur le storage account pour sécuriser le state ? 
 
 {::nomarkdown}
 <details><summary>Solution - Étape 3.1.1</summary>
@@ -141,15 +142,12 @@ tp3-nsg/
 ├── shared/          ← réseau commun (VNet, Subnet)
 │   ├── providers.tf
 │   ├── main.tf
-│   └── outputs.tf
 ├── staging/         ← NSG staging
 │   ├── providers.tf
 │   ├── main.tf
-│   └── variables.tf
 └── prod/            ← NSG prod
     ├── providers.tf
     ├── main.tf
-    └── variables.tf
 ```
 
 Dans `shared/providers.tf`, déclarez :
@@ -159,9 +157,7 @@ Dans `shared/providers.tf`, déclarez :
 Dans `shared/main.tf`, déclarez :
 1. Un Resource Group `rg-tp3-shared`
 2. Un VNet `vnet-tp3` avec l'espace `10.0.0.0/16`
-3. Trois subnets : `snet-staging` (`10.0.1.0/24`), `snet-prod` (`10.0.2.0/24`)
-
-Dans `shared/outputs.tf`, exposez les IDs des deux subnets - les projets NSG en auront besoin.
+3. Deux subnets : `snet-staging` (`10.0.1.0/24`), `snet-prod` (`10.0.2.0/24`)
 
 Initialisez et appliquez votre projet depuis le répertoire `shared/`.
 
@@ -230,18 +226,6 @@ resource "azurerm_subnet" "snet_prod" {
 }
 ```
 
-`shared/outputs.tf` :
-
-```hcl
-output "subnet_staging_id" {
-  value = azurerm_subnet.snet_staging.id
-}
-
-output "subnet_prod_id" {
-  value = azurerm_subnet.snet_prod.id
-}
-```
-
 Vérifiez dans le portail Azure : un blob `shared.tfstate` doit être apparu dans le container `tfstate`.
 
 {::nomarkdown}
@@ -252,16 +236,15 @@ Vérifiez dans le portail Azure : un blob `shared.tfstate` doit être apparu dan
 
 ### 📝 Étape 3.2.3 - Déployer les NSG par environnement
 
-Chaque environnement a des règles NSG différentes. Vous allez factoriser la structure des règles via des variables.
+Chaque environnement a des règles NSG différentes.
 
 **Ce que vous devez faire :**
 
 Pour chaque environnement (`staging/`, `prod/`) :
 
 1. Créer `providers.tf`.
-2. Créer `variables.tf`, déclarez `location`
-3. Dans `main.tf` récupérez l'ID du subnet correspondant via un **data source** `azurerm_subnet`, ainsi que le nom du ressource group.
-4. Créez un **`azurerm_resource_group`** **staging** ou **prod**
+2. Dans `main.tf` récupérez l'ID du subnet correspondant via un **data source** `azurerm_subnet`, ainsi que le nom du ressource group.
+3. Créez un **`azurerm_resource_group`** pour **staging** ou **prod**
 4. Créez un **`azurerm_network_security_group`** avec des règles adaptées à l'environnement :
    - `staging` : autoriser RDP (3389) et SSH (22) depuis Internet
    - `prod` : aucun accès entrant depuis Internet (règle deny-all)
@@ -382,7 +365,7 @@ Vérifiez dans le container `tfstate` : vous devez voir `staging.tfstate` et `pr
 
 **Ce que vous devez faire :**
 
-- Depuis le **portail Azure** (ou la CLI), créez manuellement un nouveau Resource Group `rg-tp3-dev`.
+- Depuis le **portail Azure**, créez manuellement un nouveau Resource Group `rg-tp3-dev`.
 - Notez bien l'**ID Azure complet** de ce NSG (visible dans le portail, onglet "Properties" ou via `az network nsg show`).
 - Créer une nouvelle structure de répertoire pour l'environnement `dev`.
 - Créer le fichier `provider.tf`.
@@ -433,15 +416,13 @@ aztfexport resource \
 
 ## 🗂️ Partie 3.4 - Manipulation du state
 
-> **Prérequis :** au moins un environnement est déployé avec son state distant. Votre formateur présentera les risques des manipulations de state avant cette partie.
-
 ---
 
 ### 📝 Étape 3.4.1 - Inspecter le state
 
 **Ce que vous devez faire :**
 
-Depuis le répertoire `dev/`, explorez le state avec les commandes suivantes et notez ce que retourne chacune :
+Depuis le répertoire `staging/`, explorez le state avec les commandes suivantes et notez ce que retourne chacune :
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -450,25 +431,9 @@ Depuis le répertoire `dev/`, explorez le state avec les commandes suivantes et 
 | `terraform show` | ? |
 | `terraform show -json \| jq .` | ? |
 
-> 💡 L'`<adresse>` est le chemin complet d'une ressource dans le state, tel qu'affiché par `state list` (ex. `azurerm_network_security_group.nsg_dev`).
-
 {::nomarkdown}
 <details><summary>Solution - Étape 3.4.1</summary>
 {:/nomarkdown}
-
-```bash
-# Lister toutes les ressources du state
-terraform state list
-
-# Inspecter une ressource spécifique
-terraform state show azurerm_network_security_group.nsg_dev
-
-# Afficher tout le state formaté
-terraform show
-
-# Afficher le state en JSON (nécessite jq)
-terraform show -json | jq .
-```
 
 **Ce que retourne chaque commande :**
 
@@ -487,41 +452,14 @@ terraform show -json | jq .
 
 ### 📝 Étape 3.4.2 - Renommer une ressource dans le state (`mv`)
 
-**Contexte :** vous souhaitez renommer le label local du NSG de `nsg_dev` en `main` pour uniformiser les conventions.
+**Contexte :** vous souhaitez renommer le label local du NSG de `nsg_staging` en `main` pour uniformiser les conventions.
 
 **Ce que vous devez faire :**
 
-1. Renommez le bloc resource dans `main.tf` : `azurerm_network_security_group.nsg_dev` → `azurerm_network_security_group.main`
+1. Renommez le bloc resource dans `main.tf` : `azurerm_network_security_group.nsg_staging` → `azurerm_network_security_group.main`
 2. Sans toucher au state, lancez `terraform plan`. Que se passe-t-il ?
 3. Utilisez `terraform state mv` pour synchroniser le renommage dans le state.
 4. Relancez `terraform plan`. Que se passe-t-il maintenant ?
-
-> ⚠️ `terraform state mv` modifie le state directement. Sur un backend distant, un verrou (lock) est automatiquement posé pendant l'opération.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.4.2</summary>
-{:/nomarkdown}
-
-Après avoir renommé le bloc dans `main.tf`, le `plan` prévoit de **détruire** l'ancien NSG et d'en **créer** un nouveau - ce qui n'est pas souhaité.
-
-La commande `mv` déplace l'adresse dans le state sans toucher à Azure :
-
-```bash
-terraform state mv \
-  azurerm_network_security_group.nsg_dev \
-  azurerm_network_security_group.main
-```
-
-Relancez ensuite :
-
-```bash
-terraform plan
-# → No changes. Infrastructure is up-to-date.
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
 
 ---
 
@@ -534,71 +472,14 @@ terraform plan
 1. Utilisez `terraform state rm` pour retirer l'association du state.
 2. Lancez `terraform plan`. Que propose Terraform ?
 3. Supprimez également le bloc resource correspondant dans `main.tf`.
-4. Vérifiez dans le portail Azure que l'association existe toujours.
+2. Relancez `terraform plan`. Que propose Terraform maintenant ?
 
 > 💡 `state rm` est utile pour "désadopter" une ressource sans la détruire - par exemple pour la confier à une autre équipe ou à un autre projet Terraform.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.4.3</summary>
-{:/nomarkdown}
-
-```bash
-# Lister pour trouver l'adresse exacte
-terraform state list
-
-# Retirer l'association du state
-terraform state rm azurerm_subnet_network_security_group_association.dev
-```
-
-Après le `rm`, `terraform plan` propose de **recréer** l'association (elle n'est plus dans le state mais est dans la config). Pour éviter cela, supprimez aussi le bloc resource dans `main.tf`.
-
-Vérifiez dans le portail Azure que le NSG est **toujours associé** au subnet - `state rm` ne touche pas à Azure.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-## ✅ Résultat attendu
-
-<div class="section objective">
-
-À la fin du TP 3 :
-
-- Le container `tfstate` contient **4 fichiers** : `shared.tfstate`, `dev.tfstate`, `staging.tfstate`, `prod.tfstate`
-- Chaque environnement a son propre NSG avec des règles adaptées, visible dans le portail Azure
-- Vous avez importé une ressource créée manuellement et aligné sa configuration
-- Vous maîtrisez les commandes `terraform state list`, `show`, `mv`, `rm`
-- Vous pouvez expliquer la différence entre backend local et distant, et pourquoi le locking est critique
-
-</div>
 
 ---
 
 ## 🧹 Nettoyage
 
-Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis le bootstrap.
-
-{::nomarkdown}
-<details><summary>Solution - Nettoyage</summary>
-{:/nomarkdown}
-
-```bash
-# 1. Environnements NSG
-cd tp3-nsg/prod    && terraform destroy
-cd ../staging      && terraform destroy
-cd ../dev          && terraform destroy
-
-# 2. Réseau partagé
-cd ../shared       && terraform destroy
-
-# 3. Storage Account de bootstrap (backend local)
-cd ../../tp3-bootstrap && terraform destroy
-```
+Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis `rg-tfstate` 
 
 > ⚠️ Détruire le Storage Account supprime également tous les fichiers tfstate distants. Assurez-vous que toutes les ressources gérées ont bien été détruites avant.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
