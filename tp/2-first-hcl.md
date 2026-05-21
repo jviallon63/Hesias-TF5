@@ -415,6 +415,7 @@ Créez `outputs.tf`, déclarez au minimum :
 Après l'apply, consultez les outputs avec la commande dédiée.
 
 > 💡 L'attribut `private_ip_address` est exporté directement par `azurerm_network_interface`. Explorez les attributs disponibles dans la documentation de chaque ressource, section "Attributes Reference".
+> 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.3</summary>
@@ -468,8 +469,6 @@ terraform output vm_private_ip
 - Créez un nouveau dossier `tp2-nginx/` avec un `providers.tf` et un `main.tf`.
 - Utilisez des **data sources** (`data`) pour retrouver la VM et le Resource Group créés en 2.2, sans les recréer.
 - Cherchez dans la doc : `azurerm_resource_group` (data source), `azurerm_linux_virtual_machine` (data source).
-
-> 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?

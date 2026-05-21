@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "rg" {
   name     = "rg-tp2-dev"
-  location = "West Europe"
+  location = var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -42,9 +42,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-tp2-dev"
   location                        = azurerm_resource_group.rg.location
   resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_B2s_v2"
+  size                            = var.vm_size
   admin_username                  = "adminuser"
-  admin_password                  = "P@ssw0rd1234!"
+  admin_password                  = var.admin_password
   disable_password_authentication = false
 
   network_interface_ids = [azurerm_network_interface.nic.id]
