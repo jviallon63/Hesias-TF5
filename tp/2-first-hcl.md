@@ -469,7 +469,7 @@ terraform output vm_private_ip
 
 - Créez un nouveau dossier `tp2-nginx/` avec un `providers.tf` et un `main.tf`.
 - Utilisez des **data sources** (`data`) pour retrouver la VM et le Resource Group créés en 2.2, sans les recréer.
-- Cherchez dans la doc : `azurerm_resource_group` (data source), `azurerm_linux_virtual_machine` (data source).
+- Cherchez dans la doc : `azurerm_resource_group` (data source), `azurerm_virtual_machine` (data source).
 
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
@@ -488,7 +488,7 @@ data "azurerm_resource_group" "rg" {
   name = "rg-tp2-dev"
 }
 
-data "azurerm_linux_virtual_machine" "vm" {
+data "azurerm_virtual_machine" "vm" {
   name                = "vm-tp2-dev"
   resource_group_name = data.azurerm_resource_group.rg.name
 }
@@ -512,7 +512,6 @@ terraform plan
 **Ce que vous devez faire :**
 
 - Ajoutez dans `main.tf` une ressource `azurerm_virtual_machine_extension` qui installe nginx via un script bash.
-- Utilisez `depends_on` pour forcer l'exécution après la résolution du data source.
 
 Template `main.tf` :
 
@@ -527,8 +526,6 @@ resource "azurerm_virtual_machine_extension" "nginx" {
   settings = jsonencode({
     commandToExecute = "apt-get update && apt-get install -y nginx && systemctl enable nginx && systemctl start nginx"
   })
-
-  depends_on = ...
 }
 ```
 
@@ -552,8 +549,6 @@ resource "azurerm_virtual_machine_extension" "nginx" {
   settings = jsonencode({
     commandToExecute = "apt-get update && apt-get install -y nginx && systemctl enable nginx && systemctl start nginx"
   })
-
-  depends_on = [data.azurerm_linux_virtual_machine.vm]
 }
 ```
 
