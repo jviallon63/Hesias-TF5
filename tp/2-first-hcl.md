@@ -33,7 +33,7 @@ graph TD
 1. Structurer un projet Terraform multi-fichiers avec provider et backend
 2. Déployer un réseau complet (VNet, Subnet) et une VM avec ses ressources associées
 3. Paramétrer l'infrastructure avec des variables validées et exposer des outputs
-4. Comprendre les dépendances implicites et explicites (`depends_on`, `data`)
+4. Comprendre les dépendances implicites et explicites
 5. Livrer un projet propre : conventions de nommage, tags, documentation, structure finale
 
 </div>
@@ -473,7 +473,6 @@ terraform output vm_private_ip
 
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
-- Est-ce que `depends_on` est utile dans ce cas ? Pourquoi ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.1</summary>
@@ -566,7 +565,7 @@ terraform apply
 
 > **Prérequis :** les parties 2.1 et 2.2 sont terminées.
 >
-> Vous allez **repartir du projet `tp2-infra` (Partie 2.2) ** et le transformer en un projet de qualité production.
+> Vous allez **repartir du projet `tp2-infra` (Partie 2.2)** et le transformer en un projet de qualité production.
 
 ---
 
