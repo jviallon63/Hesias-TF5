@@ -126,8 +126,6 @@ resource "azurerm_storage_container" "tfstate" {
 
 ## 🗂️ Partie 3.2 - Structure multi-environnements avec backend distant
 
-> **Prérequis :** le Storage Account est déployé. Votre formateur présentera la stratégie de découpage par répertoire avant cette partie.
-
 ---
 
 ### 📝 Étape 3.2.1 - Créer la structure de répertoires
@@ -144,10 +142,6 @@ tp3-nsg/
 │   ├── providers.tf
 │   ├── main.tf
 │   └── outputs.tf
-├── dev/             ← NSG dev
-│   ├── providers.tf
-│   ├── main.tf
-│   └── variables.tf
 ├── staging/         ← NSG staging
 │   ├── providers.tf
 │   ├── main.tf
@@ -158,32 +152,36 @@ tp3-nsg/
     └── variables.tf
 ```
 
+Dans `shared/providers.tf`, déclarez :
+1. Le providers `azurerm`
+2. Le backend remote qui utilise le storage account créé précédement
+
+Dans `shared/main.tf`, déclarez :
+1. Un Resource Group `rg-tp3-shared`
+2. Un VNet `vnet-tp3` avec l'espace `10.0.0.0/16`
+3. Trois subnets : `snet-staging` (`10.0.1.0/24`), `snet-prod` (`10.0.2.0/24`)
+
+Dans `shared/outputs.tf`, exposez les IDs des deux subnets - les projets NSG en auront besoin.
+
+Initialisez et appliquez votre projet depuis le répertoire `shared/`.
+
 > 💡 Chaque répertoire est un **projet Terraform indépendant** avec son propre `terraform init`. La clé (`key`) dans le bloc `backend "azurerm"` différencie les states.
 
 **Questions de réflexion :**
-- Quels sont les avantages et inconvénients de cette approche par répertoires vs l'utilisation de workspaces Terraform ?
 - Pourquoi le réseau est-il dans un répertoire `shared/` séparé des NSG ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2.1</summary>
 {:/nomarkdown}
 
-```bash
-mkdir -p tp3-nsg/{shared,dev,staging,prod}
-touch tp3-nsg/shared/{providers.tf,main.tf,outputs.tf}
-touch tp3-nsg/dev/{providers.tf,main.tf,variables.tf}
-touch tp3-nsg/staging/{providers.tf,main.tf,variables.tf}
-touch tp3-nsg/prod/{providers.tf,main.tf,variables.tf}
-```
-
-Template de `providers.tf` pour **`shared/`** :
+Template de `providers.tf` :
 
 ```hcl
 terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
 
@@ -200,30 +198,7 @@ provider "azurerm" {
 }
 ```
 
-Pour **`dev/`** : remplacez `key = "dev.tfstate"`, pour **`staging/`** : `key = "staging.tfstate"`, pour **`prod/`** : `key = "prod.tfstate"`.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 3.2.2 - Déployer le réseau partagé
-
-**Ce que vous devez faire :**
-
-Dans `shared/main.tf`, déclarez :
-1. Un Resource Group `rg-tp3-shared`
-2. Un VNet `vnet-tp3` avec l'espace `10.0.0.0/16`
-3. Trois subnets : `snet-dev` (`10.0.1.0/24`), `snet-staging` (`10.0.2.0/24`), `snet-prod` (`10.0.3.0/24`)
-
-Dans `shared/outputs.tf`, exposez les IDs des trois subnets - les projets NSG en auront besoin.
-
-Initialisez et appliquez depuis le répertoire `shared/`.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.2.2</summary>
-{:/nomarkdown}
+Pour **`staging/`** : `key = "staging.tfstate"`, pour **`prod/`** : `key = "prod.tfstate"`.
 
 `shared/main.tf` :
 
@@ -240,35 +215,24 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/16"]
 }
 
-resource "azurerm_subnet" "snet_dev" {
-  name                 = "snet-dev"
-  resource_group_name  = azurerm_resource_group.shared.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
-}
-
 resource "azurerm_subnet" "snet_staging" {
   name                 = "snet-staging"
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.2.0/24"]
+  address_prefixes     = ["10.0.1.0/24"]
 }
 
 resource "azurerm_subnet" "snet_prod" {
   name                 = "snet-prod"
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.3.0/24"]
+  address_prefixes     = ["10.0.2.0/24"]
 }
 ```
 
 `shared/outputs.tf` :
 
 ```hcl
-output "subnet_dev_id" {
-  value = azurerm_subnet.snet_dev.id
-}
-
 output "subnet_staging_id" {
   value = azurerm_subnet.snet_staging.id
 }
@@ -276,12 +240,6 @@ output "subnet_staging_id" {
 output "subnet_prod_id" {
   value = azurerm_subnet.snet_prod.id
 }
-```
-
-```bash
-cd tp3-nsg/shared
-terraform init
-terraform apply
 ```
 
 Vérifiez dans le portail Azure : un blob `shared.tfstate` doit être apparu dans le container `tfstate`.
@@ -298,38 +256,68 @@ Chaque environnement a des règles NSG différentes. Vous allez factoriser la st
 
 **Ce que vous devez faire :**
 
-Pour chaque environnement (`dev/`, `staging/`, `prod/`) :
+Pour chaque environnement (`staging/`, `prod/`) :
 
-1. Récupérez l'ID du subnet correspondant via un **data source** `azurerm_subnet` (ou copiez l'output de `shared/`).
-2. Créez un **`azurerm_network_security_group`** avec des règles adaptées à l'environnement :
-   - `dev` : autoriser RDP (3389) et SSH (22) depuis Internet
-   - `staging` : autoriser uniquement SSH (22) depuis Internet
+1. Créer `providers.tf`.
+2. Créer `variables.tf`, déclarez `location`
+3. Dans `main.tf` récupérez l'ID du subnet correspondant via un **data source** `azurerm_subnet`, ainsi que le nom du ressource group.
+4. Créez un **`azurerm_resource_group`** **staging** ou **prod**
+4. Créez un **`azurerm_network_security_group`** avec des règles adaptées à l'environnement :
+   - `staging` : autoriser RDP (3389) et SSH (22) depuis Internet
    - `prod` : aucun accès entrant depuis Internet (règle deny-all)
-3. Associez le NSG au subnet via `azurerm_subnet_network_security_group_association`.
+5. Associez le NSG au subnet via `azurerm_subnet_network_security_group_association`.
 
-> 💡 Les règles sont définies dans des blocs `security_rule` imbriqués dans le NSG, ou via la ressource séparée `azurerm_network_security_rule`. Réfléchissez à quelle approche utiliser et pourquoi.
+Template de création d'une NSG : 
+
+resource "azurerm_network_security_group" "nsg_staging" {
+  name                = "nsg-tp3-staging"
+  location            = ...
+  resource_group_name = ...
+
+  security_rule {
+    name                       = "allow-ssh"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "staging" {
+  subnet_id                 = ...
+  network_security_group_id = ...
+}
+```
 
 **Questions de réflexion :**
-- Comment les règles NSG sont-elles évaluées (priorité, allow vs deny) ?
 - Pourquoi utilise-t-on un data source pour le subnet plutôt qu'une référence directe ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2.3</summary>
 {:/nomarkdown}
 
-Exemple pour **`dev/main.tf`** :
+Pour `staging/` :
 
 ```hcl
-data "azurerm_subnet" "snet_dev" {
-  name                 = "snet-dev"
+data "azurerm_subnet" "snet_staging" {
+  name                 = "snet-staging"
   virtual_network_name = "vnet-tp3"
   resource_group_name  = "rg-tp3-shared"
 }
 
-resource "azurerm_network_security_group" "nsg_dev" {
-  name                = "nsg-tp3-dev"
+resource "azurerm_resource_group" "staging" {
+  name     = "rg-tp3-staging"
+  location = "West Europe"
+}
+
+resource "azurerm_network_security_group" "nsg_staging" {
+  name                = "nsg-tp3-staging"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.staging.name
 
   security_rule {
     name                       = "allow-ssh"
@@ -356,13 +344,11 @@ resource "azurerm_network_security_group" "nsg_dev" {
   }
 }
 
-resource "azurerm_subnet_network_security_group_association" "dev" {
-  subnet_id                 = data.azurerm_subnet.snet_dev.id
-  network_security_group_id = azurerm_network_security_group.nsg_dev.id
+resource "azurerm_subnet_network_security_group_association" "staging" {
+  subnet_id                 = data.azurerm_subnet.snet_staging.id
+  network_security_group_id = azurerm_network_security_group.nsg_staging.id
 }
 ```
-
-Pour `staging/` : gardez uniquement la règle SSH (supprimez RDP).
 
 Pour `prod/main.tf` : une seule règle deny-all avec priorité haute :
 
@@ -380,15 +366,9 @@ security_rule {
 }
 ```
 
-Déployez chaque environnement :
+Déployez chaque environnement
 
-```bash
-cd tp3-nsg/dev && terraform init && terraform apply
-cd ../staging  && terraform init && terraform apply
-cd ../prod     && terraform init && terraform apply
-```
-
-Vérifiez dans le container `tfstate` : vous devez voir `dev.tfstate`, `staging.tfstate` et `prod.tfstate` en plus de `shared.tfstate`.
+Vérifiez dans le container `tfstate` : vous devez voir `staging.tfstate` et `prod.tfstate` en plus de `shared.tfstate`.
 
 {::nomarkdown}
 </details>
