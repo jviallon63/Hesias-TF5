@@ -25,10 +25,6 @@ Votre équipe grossit, plusieurs développeurs travaillent sur la même infrastr
 
 ## 🗂️ Partie 3.1 - Créer le Storage Account pour le backend distant
 
----
-
-### 📝 Étape 3.1.1 - Bootstrapper le Storage Account avec un backend local
-
 Le Storage Account qui hébergera les states ne peut pas avoir son propre state dans Azure. On commence donc avec un backend **local**, que l'on supprimera ensuite.
 
 **Ce que vous devez faire :**
