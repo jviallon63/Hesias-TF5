@@ -197,8 +197,10 @@ Vous allez compléter l'infrastructure avec les ressources de calcul.
 Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctement sur le subnet existant :
 - **`azurerm_network_interface`** - une NIC attachée au subnet `snet-tp2-vm`, avec une IP privée dynamique
 - **`azurerm_managed_disk`** - un disque de données de 32 Go, type `Standard_LRS`
-- **`azurerm_linux_virtual_machine`** - une VM Ubuntu 22.04 LTS, taille `Standard_B1s`, utilisant la NIC ci-dessus
+- **`azurerm_linux_virtual_machine`** - une VM Ubuntu 22.04 LTS, taille `Standard_B2s_v2`, utilisant la NIC ci-dessus
 - **`azurerm_virtual_machine_data_disk_attachment`** - pour attacher le disque à la VM
+
+> 💡 Vérifier quelle taille de VM est disponible pour votre souscription avec `az vm list-skus --location westeurope --resource-type virtualMachines --subscription 37fe744e-5727-4031-a37a-f19348de8bf3 --query "[?starts_with(name, 'Standard_B')].name"`.
 
 Template `main.tf` : 
 
@@ -278,7 +280,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-tp2-dev"
   location                        = azurerm_resource_group.rg.location
   resource_group_name             = azurerm_resource_group.rg.name
-  size                            = "Standard_F1alds_v7"
+  size                            = "Standard_B2s_v2"
   admin_username                  = "adminuser"
   admin_password                  = "P@ssw0rd1234!"
   disable_password_authentication = false
@@ -326,7 +328,7 @@ Créer `variables.tf`, déclarez au minimum les variables suivantes avec leur ty
 |---|---|---|
 | `location` | `string` | `"West Europe"` |
 | `environment` | `string` | `"dev"` |
-| `vm_size` | `string` | `"Standard_B1s"` |
+| `vm_size` | `string` | `"Standard_B2s_v2"` |
 | `admin_password` | `string` | _(pas de défaut - sensible)_ |
 
 Ajoutez une **validation** sur `location` pour n'accepter que `"West Europe"`.
@@ -370,7 +372,7 @@ variable "environment" {
 variable "vm_size" {
   type        = string
   description = "Taille de la machine virtuelle Azure"
-  default     = "Standard_B1s"
+  default     = "Standard_B2s_v2"
 }
 
 variable "admin_password" {
@@ -466,6 +468,8 @@ terraform output vm_private_ip
 - Créez un nouveau dossier `tp2-nginx/` avec un `providers.tf` et un `main.tf`.
 - Utilisez des **data sources** (`data`) pour retrouver la VM et le Resource Group créés en 2.2, sans les recréer.
 - Cherchez dans la doc : `azurerm_resource_group` (data source), `azurerm_linux_virtual_machine` (data source).
+
+> 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
