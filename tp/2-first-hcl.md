@@ -415,6 +415,7 @@ Créez `outputs.tf`, déclarez au minimum :
 Après l'apply, consultez les outputs avec la commande dédiée.
 
 > 💡 L'attribut `private_ip_address` est exporté directement par `azurerm_network_interface`. Explorez les attributs disponibles dans la documentation de chaque ressource, section "Attributes Reference".
+
 > 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
 {::nomarkdown}
