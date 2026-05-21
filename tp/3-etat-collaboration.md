@@ -380,86 +380,34 @@ Vérifiez dans le container `tfstate` : vous devez voir `staging.tfstate` et `pr
 
 ## 🗂️ Partie 3.3 - Import d'une ressource existante
 
-> **Prérequis :** le réseau de la partie 3.2 est déployé. Votre formateur introduira le concept d'import avant cette partie.
-
----
-
-### 📝 Étape 3.3.1 - Créer une ressource manuellement dans Azure
-
 **Ce que vous devez faire :**
 
-- Depuis le **portail Azure** (ou la CLI), créez manuellement un nouveau NSG nommé `nsg-tp3-import` dans le Resource Group `rg-tp3-shared`.
-- Ajoutez-y une règle inbound SSH manuellement.
+- Depuis le **portail Azure** (ou la CLI), créez manuellement un nouveau Resource Group `rg-tp3-dev`.
 - Notez bien l'**ID Azure complet** de ce NSG (visible dans le portail, onglet "Properties" ou via `az network nsg show`).
+- Créer une nouvelle structure de répertoire pour l'environnement `dev`.
+- Créer le fichier `provider.tf`.
+- Initialiser le fichier `main.tf` avec le bloc `resource "azurerm_resource_group" "dev` vide
+- Lancer l'init du projet et importer la ressource avec `terraform import` pour associer la ressource existante à ce bloc.
 
-> 💡 Cet exercice simule une ressource créée hors Terraform par un collègue ou une procédure d'urgence - ce qu'on appelle une ressource **"orpheline"** du point de vue du state.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.3.1</summary>
-{:/nomarkdown}
-
-Via la CLI Azure :
-
-```bash
-az network nsg create \
-  --name nsg-tp3-import \
-  --resource-group rg-tp3-shared \
-  --location westeurope
-
-az network nsg rule create \
-  --nsg-name nsg-tp3-import \
-  --resource-group rg-tp3-shared \
-  --name allow-ssh \
-  --priority 100 \
-  --direction Inbound \
-  --access Allow \
-  --protocol Tcp \
-  --destination-port-range 22
-```
-
-Récupérer l'ID du NSG :
-
-```bash
-az network nsg show \
-  --name nsg-tp3-import \
-  --resource-group rg-tp3-shared \
-  --query id \
-  --output tsv
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 3.3.2 - Importer la ressource dans Terraform
-
-**Ce que vous devez faire :**
-
-Dans l'un des projets environnement (ex. `dev/`), écrivez le bloc `resource` correspondant au NSG importé **sans** lancer `apply`. Puis utilisez `terraform import` pour associer la ressource existante à ce bloc.
+> 💡 La syntaxe est : `terraform import <type>.<nom_local> <id_azure>`
 
 Après l'import :
 1. Lancez `terraform plan` - que devrait-il afficher ?
 2. Ajustez la configuration si nécessaire pour atteindre l'état `No changes`.
-
-> 💡 La syntaxe est : `terraform import <type>.<nom_local> <id_azure>`
 
 **Questions de réflexion :**
 - Que contient le state après l'import ? Utilisez `terraform state show` pour l'explorer.
 - Que se passe-t-il si vous lancez `terraform apply` sans avoir aligné la configuration avec la réalité Azure ?
 
 {::nomarkdown}
-<details><summary>Solution - Étape 3.3.2</summary>
+<details><summary>Solution - Étape 3.3.1</summary>
 {:/nomarkdown}
 
 Ajoutez dans `dev/main.tf` le bloc ressource vide (à compléter après l'import) :
 
 ```hcl
-resource "azurerm_network_security_group" "nsg_import" {
-  name                = "nsg-tp3-import"
-  location            = var.location
-  resource_group_name = var.resource_group_name
+resource "azurerm_resource_group" "dev" {
+  name                = "rg-tp3-dev"
 }
 ```
 
@@ -470,62 +418,12 @@ terraform import azurerm_network_security_group.nsg_import \
   /subscriptions/<sub_id>/resourceGroups/rg-tp3-shared/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-import
 ```
 
-Inspectez ce que Terraform a récupéré :
+`aztfexport` permet d'importer une ressource sans initialiser de fichier tf avant : 
 
 ```bash
-terraform state show azurerm_network_security_group.nsg_import
-```
-
-Lancez `terraform plan` - si des différences apparaissent (ex. la règle SSH n'est pas dans votre config), complétez le bloc `resource` pour les aligner. L'objectif est d'obtenir `No changes`.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 3.3.3 - Comparaison avec aztfexport
-
-Azure propose un outil officiel [`aztfexport`](https://github.com/Azure/aztfexport) qui automatise la génération de la configuration Terraform à partir de ressources Azure existantes.
-
-**Ce que vous devez faire :**
-
-- Installez `aztfexport` sur votre machine.
-- Exportez le NSG `nsg-tp3-import` avec cet outil dans un dossier temporaire.
-- Comparez la configuration générée avec celle que vous avez écrite manuellement.
-
-> 💡 `aztfexport` peut exporter une ressource individuelle, un Resource Group entier ou un abonnement. Cherchez la commande dans la [documentation](https://github.com/Azure/aztfexport#usage).
-
-**Questions de réflexion :**
-- Quels sont les avantages et limites d'`aztfexport` par rapport à un import manuel ?
-- La configuration générée est-elle directement utilisable en production ?
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.3.3</summary>
-{:/nomarkdown}
-
-Installation sur macOS :
-
-```bash
-brew install aztfexport
-```
-
-Export de la ressource :
-
-```bash
-mkdir /tmp/aztfexport-test && cd /tmp/aztfexport-test
-
 aztfexport resource \
   /subscriptions/<sub_id>/resourceGroups/rg-tp3-shared/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-import
 ```
-
-Ou export de tout le Resource Group :
-
-```bash
-aztfexport resource-group rg-tp3-shared
-```
-
-Comparez les fichiers générés (`main.tf`, `import.tf`) avec votre configuration manuelle. `aztfexport` génère souvent des configurations verbeuses avec tous les attributs optionnels - il est nécessaire de les nettoyer avant utilisation.
 
 {::nomarkdown}
 </details>
