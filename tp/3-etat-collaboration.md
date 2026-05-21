@@ -5,7 +5,7 @@ title: "TP 3 - State distant et gestion multi-environnements"
 
 # 📦 Contexte
 
-Votre équipe grossit. Plusieurs développeurs travaillent sur la même infrastructure et les fichiers `terraform.tfstate` locaux créent des conflits. Dans ce TP, vous allez migrer vers un **state distant** sur Azure Blob Storage, puis structurer un projet **multi-environnements** (dev, staging, prod) en appliquant des **NSG** (Network Security Groups) sur un réseau partagé. Vous terminerez par la maîtrise des commandes d'inspection et de manipulation du state.
+Votre équipe grossit, plusieurs développeurs travaillent sur la même infrastructure. Dans ce TP, vous allez migrer vers un **state distant** sur Azure Blob Storage, puis structurer un projet **multi-environnements** (staging, prod) en appliquant des **NSG** (Network Security Groups) sur un réseau partagé.s
 
 ---
 
@@ -25,13 +25,11 @@ Votre équipe grossit. Plusieurs développeurs travaillent sur la même infrastr
 
 ## 🗂️ Partie 3.1 - Créer le Storage Account pour le backend distant
 
-> **Point de départ :** un nouveau dossier vide. Votre formateur expliquera le concept de backend distant et ses enjeux avant cette partie.
-
 ---
 
 ### 📝 Étape 3.1.1 - Bootstrapper le Storage Account avec un backend local
 
-Le Storage Account qui hébergera les states ne peut pas avoir son propre state dans Azure - c'est un problème de bootstrap. On commence donc avec un backend **local**, que l'on supprimera ensuite.
+Le Storage Account qui hébergera les states ne peut pas avoir son propre state dans Azure. On commence donc avec un backend **local**, que l'on supprimera ensuite.
 
 **Ce que vous devez faire :**
 
@@ -39,22 +37,37 @@ Le Storage Account qui hébergera les states ne peut pas avoir son propre state 
 - Configurez un **backend local** dans `providers.tf`.
 - Dans `main.tf`, déclarez les ressources nécessaires pour créer :
   1. Un **Resource Group** dédié à l'infrastructure Terraform : `rg-tfstate`
-  2. Un **Storage Account** (nom unique, type `Standard_LRS`, `BlobServiceProperties` avec versioning activé)
-  3. Un **Container** dans ce Storage Account, nommé `tfstate`
+  2. Un `azurerm_storage_account` (nom unique, versioning activé et soft delete activé)
+  3. Un `azurerm_storage_container` dans ce Storage Account, nommé `tfstate`
 
-> 💡 Le nom du Storage Account doit être **globalement unique** sur Azure (3-24 caractères, minuscules et chiffres uniquement). Cherchez dans la doc `azurerm_storage_account` et `azurerm_storage_container`.
+Template de création **Storage Account** et **Container**
+
+```hcl
+resource "azurerm_storage_account" "tfstate" {
+  name                     = "stotfstate${random_id.suffix.hex}"
+  resource_group_name      = azurerm_resource_group.tfstate.name
+  location                 = azurerm_resource_group.tfstate.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+
+  # Activer le versioning
+
+  # Activer le soft delete
+}
+
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_name  = azurerm_storage_account.tfstate.name
+  container_access_type = "private"
+}
+```
 
 **Questions de réflexion :**
 - Pourquoi ne peut-on pas utiliser un backend distant pour stocker le state du Storage Account lui-même ?
-- Que se passe-t-il si deux développeurs lancent `terraform apply` en même temps sur un backend local ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 3.1.1</summary>
 {:/nomarkdown}
-
-```bash
-mkdir tp3-bootstrap && cd tp3-bootstrap
-```
 
 `providers.tf` :
 
@@ -63,7 +76,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
 
@@ -80,7 +93,7 @@ provider "azurerm" {
 `main.tf` :
 
 ```hcl
-resource "azurerm_resource_group" "tfstate" {
+resource "azurerm_resource_group" "rg_tfstate" {
   name     = "rg-tfstate"
   location = "West Europe"
 }
@@ -95,10 +108,11 @@ resource "azurerm_storage_account" "tfstate" {
   blob_properties {
     versioning_enabled = true
   }
-}
-
-resource "random_id" "suffix" {
-  byte_length = 4
+  
+  delete_retention_policy {
+    permanent_delete_enabled = true
+    days = 14
+  }
 }
 
 resource "azurerm_storage_container" "tfstate" {
@@ -106,80 +120,6 @@ resource "azurerm_storage_container" "tfstate" {
   storage_account_name  = azurerm_storage_account.tfstate.name
   container_access_type = "private"
 }
-```
-
-Ajoutez le provider `random` dans le bloc `required_providers` :
-
-```hcl
-random = {
-  source  = "hashicorp/random"
-  version = "~> 3.0"
-}
-```
-
-```bash
-terraform init
-terraform apply
-```
-
-Notez le nom du Storage Account généré - vous en aurez besoin pour les étapes suivantes :
-
-```bash
-terraform output -raw storage_account_name
-```
-
-Ajoutez dans `outputs.tf` :
-
-```hcl
-output "storage_account_name" {
-  value = azurerm_storage_account.tfstate.name
-}
-
-output "resource_group_name" {
-  value = azurerm_resource_group.tfstate.name
-}
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 3.1.2 - Supprimer le tfstate local du bootstrap
-
-Le Storage Account existe maintenant dans Azure. Le tfstate local de `tp3-bootstrap` doit être conservé **précieusement** - c'est le seul moyen pour Terraform de gérer cette ressource. Ne le migrez pas vers le backend distant qu'il héberge lui-même.
-
-**Ce que vous devez faire :**
-
-- Ajoutez `terraform.tfstate` et `terraform.tfstate.backup` dans un fichier `.gitignore` à la racine du projet.
-- Vérifiez dans le portail Azure que le Storage Account et le container `tfstate` sont bien présents.
-- Listez le contenu du container depuis la CLI Azure.
-
-> 💡 Commande utile : `az storage container list --account-name <nom> --auth-mode login`
-
-{::nomarkdown}
-<details><summary>Solution - Étape 3.1.2</summary>
-{:/nomarkdown}
-
-`.gitignore` à la racine :
-
-```
-# Terraform state local
-*.tfstate
-*.tfstate.backup
-.terraform/
-.terraform.lock.hcl
-terraform.tfvars
-```
-
-Vérifier depuis la CLI Azure :
-
-```bash
-az storage container list \
-  --account-name <storage_account_name> \
-  --auth-mode login \
-  --output table
 ```
 
 {::nomarkdown}
