@@ -575,7 +575,6 @@ terraform apply
 
 - Créez un fichier `locals.tf` avec un bloc `locals` centralisant les tags communs : `environment`, `project`, `managed_by = "terraform"` et `owner`.
 - Appliquez ces tags sur toutes les ressources Azure qui les supportent.
-- Vérifiez que tous les labels locaux Terraform suivent la convention **`snake_case`** (`snet_vm`, `data_disk`, etc.).
 - Créez un `README.md` (Installez d'abord terraform-docs !)
 
 > 💡 La fonction [`merge()`](https://developer.hashicorp.com/terraform/language/functions/merge) permet de fusionner les tags communs avec des tags spécifiques à une ressource si nécessaire.
@@ -625,7 +624,7 @@ Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform
 
 **Exercice A - Supprimer une ressource directement dans Azure :**
 
-1. Supprimez **manuellement** le subnet dans le portail Azure.
+1. Supprimez **manuellement** la VM dans le portail Azure.
 2. Lancez `terraform plan`. Que propose Terraform ?
 3. Lancez `terraform apply`. Que se passe-t-il ?
 

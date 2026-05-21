@@ -1,6 +1,7 @@
 resource "azurerm_resource_group" "rg" {
   name     = "rg-tp2-dev"
   location = var.location
+  tags     = local.common_tags
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -8,6 +9,7 @@ resource "azurerm_virtual_network" "vnet" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   address_space       = ["10.0.0.0/16"]
+  tags     = local.common_tags
 }
 
 resource "azurerm_subnet" "snet_vm" {
@@ -27,6 +29,7 @@ resource "azurerm_network_interface" "nic" {
     subnet_id                     = azurerm_subnet.snet_vm.id
     private_ip_address_allocation = "Dynamic"
   }
+  tags     = local.common_tags
 }
 
 resource "azurerm_managed_disk" "data_disk" {
@@ -36,6 +39,7 @@ resource "azurerm_managed_disk" "data_disk" {
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = 32
+  tags     = local.common_tags
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
@@ -60,6 +64,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     sku       = "22_04-lts"
     version   = "latest"
   }
+  tags     = local.common_tags
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
