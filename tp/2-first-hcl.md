@@ -621,60 +621,24 @@ terraform-docs markdown table . > README.md
 
 ---
 
-## 🗂️ Étape 2.5 - Expérimenter la dérive d'état
+## 🗂️ Partie 2.5 - Expérimenter la dérive d'état
 
-Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform est altéré. Procédez **dans l'ordre** et notez vos observations.
+Ces exercices vous permettent d'observer ce qui se passe quand l'état Terraform est altéré.
+
+**Exercice A - Supprimer une ressource directement dans Azure :**
+
+1. Supprimez **manuellement** le subnet dans le portail Azure.
+2. Lancez `terraform plan`. Que propose Terraform ?
+3. Lancez `terraform apply`. Que se passe-t-il ?
 
 **Exercice A - Supprimer le tfstate :**
 
-1. Sauvegardez le fichier `terraform.tfstate` (copiez-le ailleurs).
+1. Sauvegardez le fichier `terraform.tfstate`.
 2. Supprimez `terraform.tfstate`.
 3. Lancez `terraform plan`. Qu'observez-vous ? Pourquoi ?
-4. Cherchez la commande `terraform import` dans la documentation. Réimportez le Resource Group.
-
-> ⚠️ Ne lancez **pas** `terraform apply` après avoir supprimé le tfstate sans avoir réimporté les ressources - cela créerait des doublons dans Azure.
-
-**Exercice B - Supprimer une ressource directement dans Azure :**
-
-1. Restaurez votre tfstate.
-2. Supprimez **manuellement** le subnet dans le portail Azure.
-3. Lancez `terraform plan`. Que propose Terraform ?
 4. Lancez `terraform apply`. Que se passe-t-il ?
 
-<div class="section tasks">
-
-Notez vos observations pour chaque exercice - votre formateur en fera une synthèse en groupe.
-
-</div>
-
-{::nomarkdown}
-<details><summary>Solution - Étape 2.4.2</summary>
-{:/nomarkdown}
-
-**Exercice A :**
-
-Sans tfstate, Terraform ne connaît plus l'infrastructure existante et planifie la **création de toutes les ressources**. C'est pourquoi le state est critique.
-
-Réimporter le Resource Group :
-
-```bash
-terraform import azurerm_resource_group.rg \
-  /subscriptions/<subscription_id>/resourceGroups/rg-tp2-dev
-```
-
-Répétez l'import pour chaque ressource, puis relancez `terraform plan` - il ne devrait plus planifier de création.
-
-**Exercice B :**
-
-Terraform détecte la dérive et planifie **uniquement** la recréation du subnet supprimé - pas des autres ressources. C'est l'idempotence en action.
-
-```bash
-terraform apply  # recrée uniquement le subnet manquant
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
+> **N'oubliez pas de restaure le tfstate d'origine avant de détruire toutes les ressources**
 
 ---
 
