@@ -5,7 +5,7 @@ title: "TP 4 - Modules et logiques avancées"
 
 # 📦 Contexte
 
-Le code des NSG du TP3 est fonctionnel mais répétitif : `dev/`, `staging/` et `prod/` contiennent quasiment la même logique. Vous allez **extraire cette logique dans un module local**, puis explorer les mécanismes avancés de Terraform pour créer des ressources dynamiquement à partir de structures de données.
+Le code des NSG du TP3 est fonctionnel mais répétitif : `staging/` et `prod/` contiennent quasiment la même logique. Et si l'équipe rajoute des nouveaux environnements la duplication du code ne va faire qu'augmenter. Vous allez **extraire cette logique dans un module local**. De la même façon les `security_rules` sont répétitives et manque de flexibilité, pour ajouter une régle vous devez dupliquer tout le bloc. A l'aide des mécanismes avancés de Terraform vous allez créer des ressources dynamiquement et facilement évolutives.
 
 ---
 
@@ -14,8 +14,8 @@ Le code des NSG du TP3 est fonctionnel mais répétitif : `dev/`, `staging/` et 
 <div class="section objective">
 
 1. Créer un module local réutilisable pour les NSG avec un contrat d'interface clair
-2. Appeler le module depuis les environnements dev et prod
-3. Comprendre les limites de `count` face aux suppressions dans une liste
+2. Appeler le module depuis les environnements staging et prod
+3. Comprendre les limites de `count` et surtout les cas d'usage adaptés
 4. Maîtriser `for_each` comme alternative robuste à `count`
 5. Utiliser les `dynamic` blocks pour générer les règles NSG depuis une structure de données
 
@@ -25,36 +25,20 @@ Le code des NSG du TP3 est fonctionnel mais répétitif : `dev/`, `staging/` et 
 
 ## 🗂️ Partie 4.1 - Créer et utiliser un module NSG
 
-> **Point de départ :** le projet `tp3-nsg/` du TP précédent. Votre formateur introduira le concept de module Terraform avant cette partie.
+> **Point de départ :** le projet `tp3-nsg/` du TP précédent. Avec le backend remote et la structure du projet `shared/`, `staging/` et `prod/`
 
 ---
 
-### 📝 Étape 4.1.1 - Créer la structure du module
+### 📝 Étape 4.1.1 - Créer le module
 
 Un module Terraform est simplement un **répertoire contenant des fichiers `.tf`**. La convention est de les placer dans un sous-dossier `modules/`.
 
+> ⚠️ Pour l'instant le module ne va pas gérer les `security_rules`, vous pouvez supprimer (ou commenter) les blocs dans les scripts Terraform.
+
 **Ce que vous devez faire :**
 
-Créez la structure suivante à la racine du projet `tp3-nsg/` (que vous pouvez copier ou renommer en `tp4-nsg/`) :
-
-```
-tp4-nsg/
-├── modules/
-│   └── nsg/
-│       ├── main.tf        ← ressources créées par le module
-│       ├── variables.tf   ← contrat d'entrée (inputs)
-│       ├── outputs.tf     ← contrat de sortie (outputs)
-│       └── README.md      ← documentation du module
-├── shared/                ← inchangé depuis TP3
-├── dev/
-│   ├── providers.tf
-│   ├── main.tf            ← appellera le module
-│   └── variables.tf
-└── prod/
-    ├── providers.tf
-    ├── main.tf
-    └── variables.tf
-```
+1. Créez la structure `shared/`, `staging/` et `prod/` dans un répertoire `tp4-nsg/` que vous pouvez copier `tp3-nsg/`.
+2. Ajouter un répertoire `modules/nsg` vide pour l'instant.
 
 Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module** :
 - Quelles informations le module a-t-il **besoin** pour créer un NSG ? (inputs)
@@ -62,19 +46,14 @@ Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module**
 
 > 💡 Un bon module est comme une fonction : son interface (inputs/outputs) doit être stable et documentée. L'implémentation interne peut changer sans impacter les appelants.
 
-**Questions de réflexion :**
-- Quelle est la différence entre un module local et un module distant (Terraform Registry) ?
-- Pourquoi le module ne doit-il **pas** contenir de bloc `provider` ?
+3. Dans le nouveau module créez `variables.tf` avec la liste des inputs identifiés, n'oubliez pas les bonnes pratiques avec description et validation si pertinent.
+4. Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) - pour l'instant, créez le NSG **sans règles**.
+5. Créez `outputs.tf`pour exposer les informations utiles.
+6. Générez votre **contrat du module** dans `README.md`.
 
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.1</summary>
 {:/nomarkdown}
-
-```bash
-cp -r tp3-nsg tp4-nsg
-mkdir -p tp4-nsg/modules/nsg
-touch tp4-nsg/modules/nsg/{main.tf,variables.tf,outputs.tf,README.md}
-```
 
 **Contrat du module - réflexion préalable :**
 
@@ -84,37 +63,11 @@ touch tp4-nsg/modules/nsg/{main.tf,variables.tf,outputs.tf,README.md}
 | `location` | `string` | Région Azure |
 | `resource_group_name` | `string` | Resource Group cible |
 | `subnet_id` | `string` | ID du subnet à associer |
-| `security_rules` | `list(object)` | Règles de sécurité |
-| `tags` | `map(string)` | Tags Azure |
 
 | Output | Description |
 |---|---|
 | `nsg_id` | ID du NSG créé |
 | `nsg_name` | Nom du NSG créé |
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 4.1.2 - Écrire le module
-
-**Ce que vous devez faire :**
-
-Dans `modules/nsg/variables.tf`, déclarez chaque input avec son type, sa description et une valeur par défaut si pertinent.
-
-Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) - pour l'instant, créez le NSG **sans règles**.
-
-Dans `modules/nsg/outputs.tf`, exposez l'`id` et le `name` du NSG.
-
-Dans `modules/nsg/README.md`, documentez le module : description, inputs, outputs, exemple d'utilisation.
-
-> 💡 Pour les types complexes comme `list(object(...))`, consultez la doc [Type Constraints](https://developer.hashicorp.com/terraform/language/expressions/type-constraints). La définition du type d'un objet dans une variable est un contrat fort.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 4.1.2</summary>
-{:/nomarkdown}
 
 `modules/nsg/variables.tf` :
 
@@ -138,43 +91,20 @@ variable "subnet_id" {
   type        = string
   description = "ID du subnet auquel associer le NSG"
 }
-
-variable "security_rules" {
-  type = list(object({
-    name                       = string
-    priority                   = number
-    direction                  = string
-    access                     = string
-    protocol                   = string
-    source_port_range          = string
-    destination_port_range     = string
-    source_address_prefix      = string
-    destination_address_prefix = string
-  }))
-  description = "Liste des règles de sécurité du NSG"
-  default     = []
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "Tags Azure à appliquer aux ressources"
-  default     = {}
-}
 ```
 
 `modules/nsg/main.tf` (sans règles pour l'instant) :
 
 ```hcl
-resource "azurerm_network_security_group" "this" {
+resource "azurerm_network_security_group" "main" {
   name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
-  tags                = var.tags
 }
 
-resource "azurerm_subnet_network_security_group_association" "this" {
+resource "azurerm_subnet_network_security_group_association" "main" {
   subnet_id                 = var.subnet_id
-  network_security_group_id = azurerm_network_security_group.this.id
+  network_security_group_id = azurerm_network_security_group.main.id
 }
 ```
 
@@ -183,36 +113,13 @@ resource "azurerm_subnet_network_security_group_association" "this" {
 ```hcl
 output "nsg_id" {
   description = "ID du Network Security Group créé"
-  value       = azurerm_network_security_group.this.id
+  value       = azurerm_network_security_group.main.id
 }
 
 output "nsg_name" {
   description = "Nom du Network Security Group créé"
-  value       = azurerm_network_security_group.this.name
+  value       = azurerm_network_security_group.main.name
 }
-```
-
-`modules/nsg/README.md` :
-
-```markdown
-# Module NSG
-
-Crée un Network Security Group Azure et l'associe à un subnet.
-
-## Utilisation
-
-    module "nsg_dev" {
-      source              = "../modules/nsg"
-      name                = "nsg-tp4-dev"
-      location            = "West Europe"
-      resource_group_name = "rg-tp4-dev"
-      subnet_id           = data.azurerm_subnet.dev.id
-      tags                = { environment = "dev" }
-    }
-
-## Inputs / Outputs
-
-Voir variables.tf et outputs.tf.
 ```
 
 {::nomarkdown}
@@ -221,28 +128,24 @@ Voir variables.tf et outputs.tf.
 
 ---
 
-### 📝 Étape 4.1.3 - Appeler le module depuis dev et prod
+### 📝 Étape 4.1.2 - Appeler le module depuis dev et prod
 
 **Ce que vous devez faire :**
 
-Remplacez le code des ressources NSG dans `dev/main.tf` et `prod/main.tf` par des appels au module local. Un appel de module commence par le mot-clé `module` et référence le chemin local avec `source = "../modules/nsg"`.
+Remplacez le code des ressources NSG dans `staging/main.tf` et `prod/main.tf` par des appels au module local. Un appel de module commence par le mot-clé `module` et référence le chemin local avec `source = "../modules/nsg"`.
 
-Après la refactorisation :
-1. Lancez `terraform init` dans chaque répertoire (nécessaire après l'ajout d'un module).
-2. Lancez `terraform plan` - observez ce que Terraform prévoit. Est-ce attendu ?
-3. Si nécessaire, utilisez `terraform state mv` pour éviter les destroy/recreate.
+Après la refactorisation tester le cycle Terraform pour créer toutes les ressources à partir de `shared/`, `staging/` et `prod/`
 
 > 💡 L'adresse d'une ressource **à l'intérieur d'un module** dans le state suit le format `module.<nom_module>.<type>.<label>`.
 
 **Questions de réflexion :**
-- Pourquoi `terraform init` est-il nécessaire après l'ajout d'un module ?
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.3</summary>
 {:/nomarkdown}
 
-`dev/main.tf` (extrait) :
+`staging/main.tf` (extrait) :
 
 ```hcl
 data "azurerm_subnet" "snet_dev" {
@@ -257,7 +160,6 @@ module "nsg_dev" {
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = data.azurerm_subnet.snet_dev.id
-  tags                = { environment = "dev", project = "tp4" }
 }
 
 # Accès à un output du module
@@ -266,35 +168,13 @@ output "nsg_dev_id" {
 }
 ```
 
-`prod/main.tf` : identique en remplaçant les noms par les valeurs prod.
-
-```bash
-cd tp4-nsg/dev
-terraform init   # nécessaire pour enregistrer le module
-terraform plan
-```
-
-Si le plan prévoit de recréer les ressources déjà existantes (car les adresses dans le state ont changé), utilisez `state mv` :
-
-```bash
-# Avant : azurerm_network_security_group.nsg_dev
-# Après : module.nsg_dev.azurerm_network_security_group.this
-terraform state mv \
-  azurerm_network_security_group.nsg_dev \
-  module.nsg_dev.azurerm_network_security_group.this
-
-terraform state mv \
-  azurerm_subnet_network_security_group_association.dev \
-  module.nsg_dev.azurerm_subnet_network_security_group_association.this
-```
-
 {::nomarkdown}
 </details>
 {:/nomarkdown}
 
 ---
 
-## 🗂️ Partie 4.2 - Logiques avancées : count, for_each et dynamic blocks
+## 🗂️ Partie 4.2 - Logiques avancées : count, for_each
 
 > **Prérequis :** le module NSG fonctionne. Votre formateur présentera les meta-arguments avant cette partie.
 >
@@ -492,7 +372,7 @@ C'est le comportement attendu et sûr. `for_each` est **toujours préférable à
 
 ---
 
-### 📝 Étape 4.2.4 - Version 3 : `dynamic` blocks pour les règles
+## 🗂️ Étape 4.3 - `dynamic` blocks pour les règles
 
 Le module NSG créé en 4.1 ne gère pas encore les règles de sécurité. Vous allez les ajouter en utilisant un **`dynamic` block**, qui permet de générer un nombre variable de blocs imbriqués à partir d'une liste.
 
@@ -663,50 +543,6 @@ terraform state show module.nsg_dev.azurerm_network_security_group.this
 
 ---
 
-## ✅ Résultat attendu
-
-<div class="section objective">
-
-À la fin du TP 4 :
-
-**Module NSG (`modules/nsg/`) :**
-- Interface claire : variables typées et décrites, outputs documentés
-- `README.md` avec exemple d'utilisation
-- Règles gérées via `dynamic` block
-
-**Projet `tp4-logic/` :**
-- NSG créés via `for_each` sur une `map` - suppression d'une clé ne détruit que la ressource concernée
-- Règles générées dynamiquement depuis une liste de ports via une expression `for`
-- Vous pouvez expliquer **pourquoi `for_each` est préférable à `count`** pour des ressources identifiées métier
-
-**Projet `tp4-nsg/` :**
-- `dev/` et `prod/` n'ont plus de ressource NSG en dur - uniquement des appels `module`
-- Les règles sont définies dans des `locals`, séparées de la logique d'appel
-
-</div>
-
----
-
 ## 🧹 Nettoyage
 
-{::nomarkdown}
-<details><summary>Solution - Nettoyage</summary>
-{:/nomarkdown}
-
-```bash
-# Projet tp4-logic
-cd tp4-logic
-terraform destroy
-
-# Projet tp4-nsg - dans l'ordre
-cd tp4-nsg/dev     && terraform destroy
-cd ../prod         && terraform destroy
-cd ../shared       && terraform destroy
-
-# Bootstrap (Storage Account)
-cd ../../tp3-bootstrap && terraform destroy
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
+Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis `rg-tfstate`.

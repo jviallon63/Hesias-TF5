@@ -1,7 +1,0 @@
-{
-	"/subscriptions/37fe744e-5727-4031-a37a-f19348de8bf3/resourceGroups/rg-tp3-dev/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-dev": {
-		"resource_id": "/subscriptions/37fe744e-5727-4031-a37a-f19348de8bf3/resourceGroups/rg-tp3-dev/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-dev",
-		"resource_type": "azurerm_network_security_group",
-		"resource_name": "res-0"
-	}
-}
