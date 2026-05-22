@@ -40,20 +40,22 @@ Template de création **Storage Account** et **Container**
 
 ```hcl
 resource "azurerm_storage_account" "tfstate" {
-  name                     = "stotfstate${random_id.suffix.hex}"
+  name                     = "tfstate..."
   resource_group_name      = azurerm_resource_group.tfstate.name
-  location                 = azurerm_resource_group.tfstate.location
+  location                 = "West Europe"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
-  # Activer le versioning
+  blob_properties {
+    # Activer le versioning
 
-  # Activer le soft delete
+    # Activer le soft delete
+  }
 }
 
 resource "azurerm_storage_container" "tfstate" {
   name                  = "tfstate"
-  storage_account_name  = azurerm_storage_account.tfstate.name
+  storage_account_id  = azurerm_storage_account.tfstate.id
   container_access_type = "private"
 }
 ```
@@ -96,25 +98,25 @@ resource "azurerm_resource_group" "rg_tfstate" {
 }
 
 resource "azurerm_storage_account" "tfstate" {
-  name                     = "stotfstate${random_id.suffix.hex}"
+  name                     = "tfstate..."
   resource_group_name      = azurerm_resource_group.tfstate.name
-  location                 = azurerm_resource_group.tfstate.location
+  location                 = "West Europe"
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
   blob_properties {
     versioning_enabled = true
+
+    delete_retention_policy {
+      permanent_delete_enabled = true
+      days = 14
   }
-  
-  delete_retention_policy {
-    permanent_delete_enabled = true
-    days = 14
   }
 }
 
 resource "azurerm_storage_container" "tfstate" {
   name                  = "tfstate"
-  storage_account_name  = azurerm_storage_account.tfstate.name
+  storage_account_id  = azurerm_storage_account.tfstate.id
   container_access_type = "private"
 }
 ```
@@ -301,7 +303,7 @@ resource "azurerm_resource_group" "staging" {
 
 resource "azurerm_network_security_group" "nsg_staging" {
   name                = "nsg-tp3-staging"
-  location            = var.location
+  location            = azurerm_resource_group.staging.location
   resource_group_name = azurerm_resource_group.staging.name
 
   security_rule {
@@ -363,13 +365,19 @@ Vérifiez dans le container `tfstate` : vous devez voir `staging.tfstate` et `pr
 
 ## 🗂️ Partie 3.3 - Import d'une ressource existante
 
-**Ce que vous devez faire :**
+On souhaite importer dans nos scripts terraform l'environnement `dev` déjà existant.
+
+**Avant de commencer :**
 
 - Depuis le **portail Azure**, créez manuellement un nouveau Resource Group `rg-tp3-dev`.
-- Notez bien l'**ID Azure complet** de ce NSG (visible dans le portail, onglet "Properties" ou via `az network nsg show`).
+- Ajouter un nouveau NSG `nsg-tp3-dev`, avec une `security_rule`.
+- Notez bien l'**ID Azure complet** de ce NSG (visible dans le portail, onglet "Parameters" > "Properties").
+
+**Ce que vous devez faire :**
+
 - Créer une nouvelle structure de répertoire pour l'environnement `dev`.
 - Créer le fichier `provider.tf`.
-- Initialiser le fichier `main.tf` avec le bloc `resource "azurerm_resource_group" "dev` vide
+- Initialiser le fichier `main.tf` avec les blocs `resource "azurerm_resource_group" "dev` et `resource "azurerm_network_security_group" "nsg_dev`. Les blocs contiennent le minimum d'information pour identifier la ressource `name`, `location`, `resource_group_name`
 - Lancer l'init du projet et importer la ressource avec `terraform import` pour associer la ressource existante à ce bloc.
 
 > 💡 La syntaxe est : `terraform import <type>.<nom_local> <id_azure>`
@@ -386,26 +394,31 @@ Après l'import :
 <details><summary>Solution - Étape 3.3.1</summary>
 {:/nomarkdown}
 
-Ajoutez dans `dev/main.tf` le bloc ressource vide (à compléter après l'import) :
+Ajoutez dans `dev/main.tf` :
 
 ```hcl
 resource "azurerm_resource_group" "dev" {
-  name                = "rg-tp3-dev"
+  name     = "rg-tp3-dev"
+  location = "West Europe"
+}
+
+resource "azurerm_network_security_group" "nsg_dev" {
+  name                = "nsg-tp3-dev"
+  location            = azurerm_resource_group.dev.location
+  resource_group_name = azurerm_resource_group.dev.name
 }
 ```
 
 Puis importez :
 
 ```bash
-terraform import azurerm_network_security_group.nsg_import \
-  /subscriptions/<sub_id>/resourceGroups/rg-tp3-shared/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-import
+terraform import azurerm_network_security_group.nsg_dev /subscriptions/37fe744e-5727-4031-a37a-f19348de8bf3/resourceGroups/rg-tp3-dev/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-dev
 ```
 
 `aztfexport` permet d'importer une ressource sans initialiser de fichier tf avant : 
 
 ```bash
-aztfexport resource \
-  /subscriptions/<sub_id>/resourceGroups/rg-tp3-shared/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-import
+aztfexport resource /subscriptions/37fe744e-5727-4031-a37a-f19348de8bf3/resourceGroups/rg-tp3-dev/providers/Microsoft.Network/networkSecurityGroups/nsg-tp3-dev
 ```
 
 {::nomarkdown}
@@ -480,6 +493,4 @@ Depuis le répertoire `staging/`, explorez le state avec les commandes suivantes
 
 ## 🧹 Nettoyage
 
-Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis `rg-tfstate` 
-
-> ⚠️ Détruire le Storage Account supprime également tous les fichiers tfstate distants. Assurez-vous que toutes les ressources gérées ont bien été détruites avant.
+Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis `rg-tfstate`.
