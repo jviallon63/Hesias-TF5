@@ -35,17 +35,16 @@ Un module Terraform est simplement un **répertoire contenant des fichiers `.tf`
 
 > ⚠️ Pour l'instant le module ne va pas gérer les `security_rules`, vous pouvez supprimer (ou commenter) les blocs dans les scripts Terraform.
 
-**Ce que vous devez faire :**
-
-1. Créez la structure `shared/`, `staging/` et `prod/` dans un répertoire `tp4-nsg/` que vous pouvez copier `tp3-nsg/`.
-2. Ajouter un répertoire `modules/nsg` vide pour l'instant.
-
 Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module** :
 - Quelles informations le module a-t-il **besoin** pour créer un NSG ? (inputs)
 - Quelles informations doit-il **exposer** à l'appelant ? (outputs)
 
 > 💡 Un bon module est comme une fonction : son interface (inputs/outputs) doit être stable et documentée. L'implémentation interne peut changer sans impacter les appelants.
 
+**Ce que vous devez faire :**
+
+1. Créez la structure `shared/`, `staging/` et `prod/` dans un répertoire `tp4-nsg/` que vous pouvez copier `tp3-nsg/`.
+2. Ajouter un répertoire `modules/nsg` vide pour l'instant.
 3. Dans le nouveau module créez `variables.tf` avec la liste des inputs identifiés, n'oubliez pas les bonnes pratiques avec description et validation si pertinent.
 4. Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) - pour l'instant, créez le NSG **sans règles**.
 5. Créez `outputs.tf`pour exposer les informations utiles.
