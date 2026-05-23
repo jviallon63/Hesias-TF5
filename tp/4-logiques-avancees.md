@@ -173,205 +173,7 @@ output "nsg_dev_id" {
 
 ---
 
-## 🗂️ Partie 4.2 - Logiques avancées : count, for_each
-
-> **Prérequis :** le module NSG fonctionne. Votre formateur présentera les meta-arguments avant cette partie.
->
-> Dans cette partie, vous travaillez dans un **nouveau dossier `tp4-logic/`** indépendant, pour explorer les concepts sans impacter le projet NSG.
-
----
-
-### 📝 Étape 4.2.1 - Définir une map de configuration NSG
-
-Vous allez centraliser la configuration de plusieurs NSG dans une **variable de type `map`**.
-
-**Ce que vous devez faire :**
-
-Dans `tp4-logic/variables.tf`, déclarez une variable `nsg_configs` de type `map(object)` contenant la configuration de plusieurs NSG : au moins `dev`, `staging` et `prod`, chacun avec un nom, une liste de ports autorisés et un niveau d'accès.
-
-Réfléchissez à la structure de l'objet avant de coder : quels attributs sont nécessaires pour différencier les NSG ?
-
-> 💡 Une `map` en Terraform est une collection de valeurs indexées par une **clé string**. Elle se prête bien aux ressources similaires qu'on veut instancier plusieurs fois avec des paramètres différents.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 4.2.1</summary>
-{:/nomarkdown}
-
-```bash
-mkdir tp4-logic && cd tp4-logic
-touch providers.tf variables.tf main.tf outputs.tf
-```
-
-`variables.tf` :
-
-```hcl
-variable "location" {
-  type    = string
-  default = "West Europe"
-}
-
-variable "resource_group_name" {
-  type    = string
-  default = "rg-tp4-logic"
-}
-
-variable "nsg_configs" {
-  type = map(object({
-    allowed_ports = list(string)
-    environment   = string
-  }))
-  default = {
-    dev = {
-      allowed_ports = ["22", "3389", "8080"]
-      environment   = "dev"
-    }
-    staging = {
-      allowed_ports = ["22", "8080"]
-      environment   = "staging"
-    }
-    prod = {
-      allowed_ports = ["443"]
-      environment   = "prod"
-    }
-  }
-}
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 4.2.2 - Version 1 : `count` et ses limites
-
-**Ce que vous devez faire :**
-
-Dans `main.tf`, utilisez `count` pour créer autant de NSG qu'il y a d'entrées dans `var.nsg_configs`. Pour accéder aux clés et valeurs, utilisez les fonctions `keys()` et `values()`.
-
-1. Appliquez la configuration. Observez les ressources créées (`terraform state list`).
-2. **Expérience critique :** supprimez l'entrée `staging` de la map dans `variables.tf`.
-3. Lancez `terraform plan`. Qu'observez-vous ? Combien de ressources vont être modifiées ou détruites ?
-4. Notez le problème et réfléchissez à son origine avant de passer à la suite.
-
-> 💡 `count` adresse les ressources par leur **index numérique** dans la liste. Que se passe-t-il quand l'index change ?
-
-{::nomarkdown}
-<details><summary>Solution - Étape 4.2.2</summary>
-{:/nomarkdown}
-
-`main.tf` - Version 1 avec `count` :
-
-```hcl
-resource "azurerm_resource_group" "rg" {
-  name     = var.resource_group_name
-  location = var.location
-}
-
-resource "azurerm_network_security_group" "nsg" {
-  count               = length(var.nsg_configs)
-  name                = "nsg-tp4-${keys(var.nsg_configs)[count.index]}"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  tags = {
-    environment = values(var.nsg_configs)[count.index].environment
-  }
-}
-```
-
-```bash
-terraform init && terraform apply
-terraform state list
-# → azurerm_network_security_group.nsg[0]  (dev)
-# → azurerm_network_security_group.nsg[1]  (staging)
-# → azurerm_network_security_group.nsg[2]  (prod)
-```
-
-**Après suppression de `staging` de la map :**
-
-```bash
-terraform plan
-```
-
-**Problème observé :** Terraform veut **modifier** `nsg[1]` (qui était `staging`, maintenant `prod`) et **détruire** `nsg[2]`. Il ne comprend pas qu'on a supprimé `staging` - il voit juste que les index ont changé.
-
-Ce comportement est **dangereux en production** : supprimer un élément du milieu d'une liste entraîne la destruction/recréation de toutes les ressources suivantes.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 4.2.3 - Version 2 : `for_each` comme solution
-
-**Ce que vous devez faire :**
-
-Remplacez le `count` par `for_each` en passant directement la `map` `var.nsg_configs`. 
-
-1. Avant d'appliquer, utilisez `terraform state mv` pour migrer les ressources existantes vers leurs nouvelles adresses (de `nsg[0]` vers `nsg["dev"]`, etc.) afin d'éviter un destroy/recreate.
-2. Appliquez et vérifiez que `terraform plan` affiche `No changes`.
-3. **Même expérience :** supprimez à nouveau `staging` de la map.
-4. Lancez `terraform plan`. Comparez le résultat avec la version `count`.
-
-> 💡 Avec `for_each`, Terraform adresse chaque ressource par la **clé de la map** (`nsg["dev"]`, `nsg["staging"]`…). La suppression d'une clé n'affecte pas les autres.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 4.2.3</summary>
-{:/nomarkdown}
-
-`main.tf` - Version 2 avec `for_each` :
-
-```hcl
-resource "azurerm_network_security_group" "nsg" {
-  for_each            = var.nsg_configs
-  name                = "nsg-tp4-${each.key}"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  tags = {
-    environment = each.value.environment
-  }
-}
-```
-
-Migration du state avant d'appliquer :
-
-```bash
-terraform state mv \
-  'azurerm_network_security_group.nsg[0]' \
-  'azurerm_network_security_group.nsg["dev"]'
-
-terraform state mv \
-  'azurerm_network_security_group.nsg[1]' \
-  'azurerm_network_security_group.nsg["staging"]'
-
-terraform state mv \
-  'azurerm_network_security_group.nsg[2]' \
-  'azurerm_network_security_group.nsg["prod"]'
-
-terraform plan
-# → No changes.
-```
-
-**Après suppression de `staging` :**
-
-```bash
-terraform plan
-# → Plan: 0 to add, 0 to change, 1 to destroy.
-# Seul nsg["staging"] est détruit - dev et prod ne sont pas touchés.
-```
-
-C'est le comportement attendu et sûr. `for_each` est **toujours préférable à `count`** pour des ressources différenciées par un identifiant métier.
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-## 🗂️ Étape 4.3 - `dynamic` blocks pour les règles
+## 🗂️ Étape 4.2 - `dynamic` blocks pour les règles
 
 Le module NSG créé en 4.1 ne gère pas encore les règles de sécurité. Vous allez les ajouter en utilisant un **`dynamic` block**, qui permet de générer un nombre variable de blocs imbriqués à partir d'une liste.
 
@@ -483,7 +285,8 @@ terraform state show 'azurerm_network_security_group.nsg["prod"]'
 
 ---
 
-### 📝 Étape 4.2.5 - Intégration : module + for_each + dynamic
+
+### 📝 Étape 4.2.2 - Intégration : module + for_each + dynamic
 
 **Ce que vous devez faire :**
 
@@ -534,6 +337,117 @@ module "nsg_dev" {
 ```bash
 terraform apply
 terraform state show module.nsg_dev.azurerm_network_security_group.this
+```
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+
+---
+
+## 🗂️ Partie 4.3 - Logiques avancées : count, for_each
+
+---
+
+### 📝 Étape 4.3.1 - Création des subnets avec count
+
+Avant de commencer, copiez `tp4-nsg/` dans un nouveau projet `tp4-nsg-count/`. Vous allez travailler sur le répertoire `shared/` pour créer les subnets de façon plus flexible, avec une ressource itérative et une liste d'objets définie en variable.
+
+**Ce que vous devez faire :**
+
+Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées pour `staging` et `prod`. Si l'équipe veut ajouter un environnement `dev`, il faut dupliquer un bloc entier.
+
+1. Dans `shared/variables.tf`, déclarez une variable `subnets` de type `list(object)` avec les attributs `name` et `address_prefix`. Initialisez-la avec `snet-staging` et `snet-prod`.
+2. Dans `shared/main.tf`, remplacez les deux blocs `azurerm_subnet` par une seule ressource utilisant `count`.
+3. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
+4. Ajoutez `snet-dev` **en fin de liste** (adress_prefix = `10.0.3.0/24`) dans la variable et appliquez vos modification.
+
+**Questions de réflexion :**
+- Pourquoi il est préférable de gérer la liste des subnets en tant que `variables` plutôt qu'en `locals` ?
+- Supprimé le subnet `staging`. Que ce passe t'il ? Pourquoi ? 
+
+{::nomarkdown}
+<details><summary>Solution - Étape 4.2.1</summary>
+{:/nomarkdown}
+
+`shared/variables.tf` :
+
+```hcl
+variable "subnets" {
+  type = list(object({
+    name           = string
+    address_prefix = string
+  }))
+  default = [
+    { name = "snet-staging", address_prefix = "10.0.1.0/24" },
+    { name = "snet-prod",    address_prefix = "10.0.2.0/24" },
+  ]
+}
+```
+
+`shared/main.tf` :
+
+```hcl
+resource "azurerm_subnet" "snet" {
+  count                = length(var.subnets)
+  name                 = var.subnets[count.index].name
+  resource_group_name  = azurerm_resource_group.shared.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = [var.subnets[count.index].address_prefix]
+}
+```
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+
+---
+
+### 📝 Étape 4.3.2 - Création des subnets avec for_each
+
+Avant de commencer, détruisez toutes les ressources créées précédement. Copiez `tp4-nsg/` dans un nouveau projet `tp4-nsg-for_each/`. Vous allez refaire le même exercice mais en remplaçant `count` par `for_each`.
+
+**Ce que vous devez faire :**
+
+1. Dans `shared/variables.tf`, déclarez une variable `subnets` de type `map(object)` avec `address_prefix` comme seul attribut. Le nom du subnet devient la **clé de la map**. Initialisez-la avec `snet-staging` et `snet-prod`.
+2. Dans `shared/main.tf`, remplacez les deux blocs `azurerm_subnet` par une seule ressource utilisant `for_each`.
+3. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
+4. Ajoutez `snet-dev` à la map (`address_prefix = "10.0.3.0/24"`) et appliquez. Observez le plan.
+
+**Questions de réflexion :**
+- Quelle est la différence entre les adresses dans le state (`snet[0]` vs `snet["snet-staging"]`) ?
+- Pourquoi la suppression de `staging` ne provoque-t-elle pas de modification sur `prod` ?
+- Quel est la différence en `list` et `map` ?
+- Dans quel cas `count` doit être utilisé ?
+
+{::nomarkdown}
+<details><summary>Solution - Étape 4.2.2</summary>
+{:/nomarkdown}
+
+`shared/variables.tf` :
+
+```hcl
+variable "subnets" {
+  type = map(object({
+    address_prefix = string
+  }))
+  default = {
+    "snet-staging" = { address_prefix = "10.0.1.0/24" }
+    "snet-prod"    = { address_prefix = "10.0.2.0/24" }
+  }
+}
+```
+
+`shared/main.tf` :
+
+```hcl
+resource "azurerm_subnet" "snet" {
+  for_each             = var.subnets
+  name                 = each.key
+  resource_group_name  = azurerm_resource_group.shared.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = [each.value.address_prefix]
+}
 ```
 
 {::nomarkdown}
