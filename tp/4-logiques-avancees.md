@@ -417,7 +417,7 @@ Avant de commencer, détruisez toutes les ressources créées précédement. Cop
 **Questions de réflexion :**
 - Quelle est la différence entre les adresses dans le state (`snet[0]` vs `snet["snet-staging"]`) ?
 - Pourquoi la suppression de `staging` ne provoque-t-elle pas de modification sur `prod` ?
-- Quel est la différence en `list` et `map` ?
+- Quelle est la différence en `list` et `map` ?
 - Dans quel cas `count` doit être utilisé ?
 
 {::nomarkdown}
