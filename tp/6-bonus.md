@@ -9,20 +9,6 @@ Vous avez fini les TP principaux ? Bravo. Ce TP bonus regroupe **5 exercices ind
 
 ---
 
-## 🎯 Objectifs
-
-<div class="section objective">
-
-1. Utiliser le provider `random` pour générer des secrets et déployer une base PostgreSQL
-2. Contrôler le comportement du provider `azurerm` via le bloc `features {}`
-3. Refactoriser du code Terraform sans détruire de ressources grâce au bloc `moved`
-4. Écrire des assertions d'infrastructure avec les `check` blocks (Terraform ≥ 1.5)
-5. Générer des scripts dynamiques avec la fonction `templatefile()`
-
-</div>
-
----
-
 ## 🗂️ Exercice 1 - Base de données PostgreSQL avec mot de passe aléatoire
 
 ### 🧩 Problème

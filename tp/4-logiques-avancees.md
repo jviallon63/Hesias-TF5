@@ -181,23 +181,25 @@ Le module NSG créé en 4.1 ne gère pas encore les règles de sécurité. Vous 
 
 Dans `modules/nsg/main.tf`, ajoutez un bloc `dynamic "security_rule"` à l'intérieur de la ressource `azurerm_network_security_group`. Ce bloc doit itérer sur `var.security_rules` et créer une règle pour chaque élément.
 
-Puis, dans `tp4-logic/main.tf`, générez dynamiquement les règles pour chaque NSG à partir de la map `var.nsg_configs` en utilisant les `allowed_ports` : chaque port doit devenir une règle `Allow Inbound`.
+Puis, dans `tp4-nsg/staging/main.tf` et `tp4-nsg/prod/main.tf`, générez dynamiquement les règles pour chaque NSG à partir de la liste `var.nsg_configs` en utilisant les `allowed_ports` : chaque port doit devenir une règle `Allow Inbound`.
 
-> 💡 La syntaxe d'un `dynamic` block :
-> ```hcl
-> dynamic "security_rule" {
->   for_each = var.security_rules
->   content {
->     name = security_rule.value.name
->     ...
->   }
-> }
-> ```
+Template d'un `dynamic` block :
+
+```hcl
+dynamic "security_rule" {
+  for_each = var.security_rules
+  content {
+    name = security_rule.value.name
+    ...
+  }
+}
+```
+
 > L'itérateur par défaut porte le même nom que le bloc (`security_rule`). Vous pouvez le renommer avec `iterator = rule` pour plus de lisibilité.
 
 **Questions de réflexion :**
-- Quelle est la différence entre `for_each` sur une ressource et `for_each` dans un `dynamic` block ?
 - Comment générer automatiquement une priorité unique pour chaque règle à partir de son index ?
+- Avec le module et le dynamic block vous pouvez facilement ajouter un environnement `dev`.
 
 {::nomarkdown}
 <details><summary>Solution - Étape 4.2.4</summary>
@@ -231,7 +233,7 @@ resource "azurerm_network_security_group" "this" {
 }
 ```
 
-Dans `tp4-logic/main.tf`, génération des règles à partir des ports avec une expression `for` :
+Dans `tp4-nsg/staging/main.tf`, génération des règles à partir des ports avec une expression `for` :
 
 ```hcl
 resource "azurerm_network_security_group" "nsg" {
@@ -262,81 +264,6 @@ resource "azurerm_network_security_group" "nsg" {
     }
   }
 }
-```
-
-```bash
-terraform plan
-terraform apply
-```
-
-Inspectez le résultat :
-
-```bash
-terraform state show 'azurerm_network_security_group.nsg["dev"]'
-# → 3 règles : allow-22, allow-3389, allow-8080
-
-terraform state show 'azurerm_network_security_group.nsg["prod"]'
-# → 1 règle : allow-443
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-
-### 📝 Étape 4.2.2 - Intégration : module + for_each + dynamic
-
-**Ce que vous devez faire :**
-
-Revenez dans `tp4-nsg/dev/` et appelez le module NSG en lui passant des règles générées dynamiquement depuis une variable locale. Le but est d'obtenir un code d'appel **aussi court que possible** tout en restant lisible.
-
-Utilisez une expression `for` dans l'appel au module pour transformer la liste de ports en liste d'objets `security_rule` attendus par le module.
-
-{::nomarkdown}
-<details><summary>Solution - Étape 4.2.5</summary>
-{:/nomarkdown}
-
-`dev/main.tf` avec appel du module et génération des règles :
-
-```hcl
-locals {
-  dev_ports = ["22", "3389", "8080"]
-
-  dev_rules = [for idx, port in local.dev_ports : {
-    name                       = "allow-${port}"
-    priority                   = 100 + idx * 10
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = port
-    source_address_prefix      = "Internet"
-    destination_address_prefix = "*"
-  }]
-}
-
-data "azurerm_subnet" "snet_dev" {
-  name                 = "snet-dev"
-  virtual_network_name = "vnet-tp3"
-  resource_group_name  = "rg-tp3-shared"
-}
-
-module "nsg_dev" {
-  source              = "../modules/nsg"
-  name                = "nsg-tp4-dev"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = data.azurerm_subnet.snet_dev.id
-  security_rules      = local.dev_rules
-  tags                = { environment = "dev", project = "tp4" }
-}
-```
-
-```bash
-terraform apply
-terraform state show module.nsg_dev.azurerm_network_security_group.this
 ```
 
 {::nomarkdown}
