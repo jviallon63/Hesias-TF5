@@ -6,11 +6,8 @@ terraform {
     }
   }
 
-  backend "azurerm" {
-    resource_group_name  = "rg-tfstate"
-    storage_account_name = "tfstatejulien"
-    container_name       = "tfstate"
-    key                  = "shared.tfstate"
+  backend "local" {
+    path = "shared.tfstate"
   }
 
 }

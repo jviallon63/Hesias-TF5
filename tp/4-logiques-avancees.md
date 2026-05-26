@@ -7,6 +7,8 @@ title: "TP 4 - Modules et logiques avancées"
 
 Le code des NSG du TP3 est fonctionnel mais répétitif : `staging/` et `prod/` contiennent quasiment la même logique. Et si l'équipe rajoute des nouveaux environnements la duplication du code ne va faire qu'augmenter. Vous allez **extraire cette logique dans un module local**. De la même façon les `security_rules` sont répétitives et manque de flexibilité, pour ajouter une régle vous devez dupliquer tout le bloc. A l'aide des mécanismes avancés de Terraform vous allez créer des ressources dynamiquement et facilement évolutives.
 
+> ⚠️ Pour faciliter la réalisation de ce TP vous allez réutilisez un backend local.
+
 ---
 
 ## 🎯 Objectifs
@@ -25,7 +27,7 @@ Le code des NSG du TP3 est fonctionnel mais répétitif : `staging/` et `prod/` 
 
 ## 🗂️ Partie 4.1 - Créer et utiliser un module NSG
 
-> **Point de départ :** le projet `tp3-nsg/` du TP précédent. Avec le backend remote et la structure du projet `shared/`, `staging/` et `prod/`
+> **Point de départ :** structure du TP3 avec les répertoires `shared/`, `staging/` et `prod/`. Téléchargez [ici](tp4-init.zip) le projet de départ.
 
 ---
 
