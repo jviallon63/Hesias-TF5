@@ -202,7 +202,7 @@ Dans `modules/nsg/main.tf`, ajoutez un bloc `dynamic "security_rule"` à l'inté
 
 > 💡 Vous êtes en train de modifier le contrat d'utilisation de votre module, qui à besoin maintenant d'une nouvelle variable `var.security_rules`. N'oubliez pas de l'ajouter et de la documenter.
 
-Puis, dans `tp4-nsg/staging/` et `tp4-nsg/prod/`, Créer une `list` d'objet à créer.
+Puis, dans `tp4-nsg/staging/` et `tp4-nsg/prod/`, Créer une `list` d'objets à créer.
 
 Template d'un `dynamic` block :
 
