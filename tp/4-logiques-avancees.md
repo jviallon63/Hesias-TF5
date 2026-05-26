@@ -35,7 +35,7 @@ Le code des NSG du TP3 est fonctionnel mais répétitif : `staging/` et `prod/` 
 
 Un module Terraform est simplement un **répertoire contenant des fichiers `.tf`**. La convention est de les placer dans un sous-dossier `modules/`.
 
-> ⚠️ Pour l'instant le module ne va pas gérer les `security_rules`, vous pouvez supprimer (ou commenter) les blocs dans les scripts Terraform.
+> ⚠️ Pour l'instant le module ne va pas gérer les `security_rules`. Les blocks ont été supprimés du projet de départ.
 
 Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module** :
 - Quelles informations le module a-t-il **besoin** pour créer un NSG ? (inputs)
@@ -45,7 +45,7 @@ Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module**
 
 **Ce que vous devez faire :**
 
-1. Créez la structure `shared/`, `staging/` et `prod/` dans un répertoire `tp4-nsg/` que vous pouvez copier `tp3-nsg/`.
+1. Créez la structure `shared/`, `staging/` et `prod/` dans un répertoire `tp4-nsg/` à partir du projet de départ à télécharger.
 2. Ajouter un répertoire `modules/nsg` vide pour l'instant.
 3. Dans le nouveau module créez `variables.tf` avec la liste des inputs identifiés, n'oubliez pas les bonnes pratiques avec description et validation si pertinent.
 4. Dans `modules/nsg/main.tf`, écrivez les ressources `azurerm_network_security_group` et `azurerm_subnet_network_security_group_association`. Les règles de sécurité seront ajoutées plus tard (partie 4.2) - pour l'instant, créez le NSG **sans règles**.
@@ -81,6 +81,14 @@ variable "name" {
 variable "location" {
   type        = string
   description = "Région Azure"
+
+  validation {
+    condition = contains(
+      ["westeurope"],
+      var.location
+    )
+    error_message = "Location doit être : westeurope."
+  }
 }
 
 variable "resource_group_name" {
@@ -137,7 +145,7 @@ Remplacez le code des ressources NSG dans `staging/main.tf` et `prod/main.tf` pa
 
 Après la refactorisation tester le cycle Terraform pour créer toutes les ressources à partir de `shared/`, `staging/` et `prod/`
 
-> 💡 L'adresse d'une ressource **à l'intérieur d'un module** dans le state suit le format `module.<nom_module>.<type>.<label>`.
+> 💡 L'adresse d'une ressource **à l'intérieur d'un module** dans le state suit le format `module.<nom_module>.<label>`.
 
 **Questions de réflexion :**
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
@@ -146,26 +154,35 @@ Après la refactorisation tester le cycle Terraform pour créer toutes les resso
 <details><summary>Solution - Étape 4.1.3</summary>
 {:/nomarkdown}
 
-`staging/main.tf` (extrait) :
+`staging/main.tf` :
 
 ```hcl
-data "azurerm_subnet" "snet_dev" {
-  name                 = "snet-dev"
-  virtual_network_name = "vnet-tp3"
-  resource_group_name  = "rg-tp3-shared"
+data "azurerm_subnet" "snet_staging" {
+  name                 = "snet-staging"
+  virtual_network_name = "vnet-tp4"
+  resource_group_name  = "rg-tp4-shared"
 }
 
-module "nsg_dev" {
-  source              = "../modules/nsg"
-  name                = "nsg-tp4-dev"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = data.azurerm_subnet.snet_dev.id
+resource "azurerm_resource_group" "staging" {
+  name     = "rg-tp4-staging"
+  location = "West Europe"
 }
 
-# Accès à un output du module
-output "nsg_dev_id" {
-  value = module.nsg_dev.nsg_id
+module "nsg" {
+  source = "../modules/nsg"
+
+  name                = "nsg-tp4-staging"
+  location            = azurerm_resource_group.staging.location
+  resource_group_name = azurerm_resource_group.staging.name
+  subnet_id           = data.azurerm_subnet.snet_staging.id
+}
+```
+
+`staging/outputs.tf` :
+
+```hcl
+output "nsg_staging_id" {
+  value = module.nsg.nsg_id
 }
 ```
 
@@ -183,7 +200,9 @@ Le module NSG créé en 4.1 ne gère pas encore les règles de sécurité. Vous 
 
 Dans `modules/nsg/main.tf`, ajoutez un bloc `dynamic "security_rule"` à l'intérieur de la ressource `azurerm_network_security_group`. Ce bloc doit itérer sur `var.security_rules` et créer une règle pour chaque élément.
 
-Puis, dans `tp4-nsg/staging/main.tf` et `tp4-nsg/prod/main.tf`, générez dynamiquement les règles pour chaque NSG à partir de la liste `var.nsg_configs` en utilisant les `allowed_ports` : chaque port doit devenir une règle `Allow Inbound`.
+> 💡 Vous êtes en train de modifier le contrat d'utilisation de votre module, qui à besoin maintenant d'une nouvelle variable `var.security_rules`. N'oubliez pas de l'ajouter et de la documenter.
+
+Puis, dans `tp4-nsg/staging/` et `tp4-nsg/prod/`, Créer une `list` d'objet à créer.
 
 Template d'un `dynamic` block :
 
@@ -214,7 +233,6 @@ resource "azurerm_network_security_group" "this" {
   name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
-  tags                = var.tags
 
   dynamic "security_rule" {
     for_each = var.security_rules
@@ -223,48 +241,34 @@ resource "azurerm_network_security_group" "this" {
     content {
       name                       = rule.value.name
       priority                   = rule.value.priority
-      direction                  = rule.value.direction
+      direction                  = "Inbound"
       access                     = rule.value.access
       protocol                   = rule.value.protocol
-      source_port_range          = rule.value.source_port_range
-      destination_port_range     = rule.value.destination_port_range
-      source_address_prefix      = rule.value.source_address_prefix
-      destination_address_prefix = rule.value.destination_address_prefix
+      source_port_range          = "*"
+      destination_port_range     = rule.value.port
+      source_address_prefix      = "Internet"
+      destination_address_prefix = "*"
     }
   }
 }
 ```
 
-Dans `tp4-nsg/staging/main.tf`, génération des règles à partir des ports avec une expression `for` :
+Dans `tp4-nsg/staging/main.tf` :
 
 ```hcl
-resource "azurerm_network_security_group" "nsg" {
-  for_each            = var.nsg_configs
-  name                = "nsg-tp4-${each.key}"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  tags                = { environment = each.value.environment }
+locals {
+  security_rules = [
+    { name = "allow-http", priority = 100, access = "Allow", protocol = "Tcp", port = "80" },
+    { name = "allow-https", priority = 110, access = "Allow", protocol = "Tcp", port = "443" },
+    { name = "allow-ssh",  priority = 120, access = "Allow", protocol = "Tcp", port = "22" },
+  ]
+}
 
-  dynamic "security_rule" {
-    # Transforme la liste de ports en map indexée pour avoir une clé unique
-    for_each = { for idx, port in each.value.allowed_ports : port => {
-      priority = 100 + idx * 10
-      port     = port
-    }}
-    iterator = rule
+module "nsg" {
+  source = "../modules/nsg"
 
-    content {
-      name                       = "allow-${rule.key}"
-      priority                   = rule.value.priority
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = rule.key
-      source_address_prefix      = "Internet"
-      destination_address_prefix = "*"
-    }
-  }
+  ...
+  security_rule       = locals.security_rules
 }
 ```
 
