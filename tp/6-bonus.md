@@ -354,53 +354,64 @@ module "rg" {
 
 ---
 
-## 🗂️ Exercice 4 - Partage de state avec `terraform_remote_state`
+## 🗂️ Exercice 4 - Conditions ternaires et création conditionnelle
 
 ### 🧩 Problème
 
-Dans un vrai projet, l'infrastructure est souvent découpée en plusieurs stacks Terraform indépendantes : une équipe déploie le réseau, une autre déploie les VMs, une autre les bases de données. Comment l'équipe VM récupère-t-elle l'ID du subnet créé par l'équipe réseau **sans copier-coller des valeurs en dur** ?
-
-La réponse : `terraform_remote_state`. Ce data source lit directement le fichier `.tfstate` d'un autre projet et expose ses `output`.
+En environnement réel, on ne déploie pas toujours les mêmes ressources partout. Par exemple, on veut un Bastion en production mais pas en dev, ou une SKU différente selon l'environnement. Vous allez utiliser l'opérateur ternaire de Terraform (`condition ? valeur_si_vrai : valeur_si_faux`) pour piloter ce comportement.
 
 ---
 
-### 📝 Étape 4.1 - Stack réseau : déployer et exposer des outputs
+### 📝 Étape 4.1 - Utiliser un ternaire pour adapter la configuration
 
-Créez un dossier `tp-bonus-remote-state/network/`. C'est la stack "infrastructure réseau", gérée par une équipe dédiée.
+Créez un dossier `tp-bonus-conditions/` avec `providers.tf`, `variables.tf`, `main.tf`.
 
 **Ce que vous devez faire :**
 
-1. Déployez un Resource Group, un VNet et deux subnets (`snet-app` et `snet-db`).
-2. Exposez dans `outputs.tf` les IDs des deux subnets, l'ID du VNet et le nom du Resource Group.
-3. Configurez un **backend distant** (Azure Blob Storage) pour ce projet — le state doit être accessible par d'autres projets.
+1. Déclarez une variable `environment` (`dev`, `staging`, `prod`).
+2. Créez un Resource Group.
+3. Créez une IP publique avec une SKU calculée par ternaire : `Standard` en `prod`, `Basic` sinon.
+4. Ajoutez un tag `critical = "yes"` en prod et `critical = "no"` sinon, via ternaire.
 
-> 💡 Un `output` n'est accessible via `terraform_remote_state` que s'il est déclaré dans `outputs.tf` de la stack source. Pensez à tout exposer dès maintenant.
+> 💡 Le ternaire est une expression : il peut être utilisé dans n'importe quel attribut Terraform (`name`, `sku`, `tags`, `locals`, etc.).
 
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1</summary>
 {:/nomarkdown}
 
-`network/outputs.tf` :
+`variables.tf` :
 
 ```hcl
-output "vnet_id" {
-  description = "ID du Virtual Network"
-  value       = azurerm_virtual_network.main.id
+variable "environment" {
+  type        = string
+  description = "Environnement cible (dev, staging, prod)"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment doit être dev, staging ou prod."
+  }
+}
+```
+
+`main.tf` :
+
+```hcl
+resource "azurerm_resource_group" "main" {
+  name     = "rg-bonus-${var.environment}"
+  location = "West Europe"
 }
 
-output "subnet_app_id" {
-  description = "ID du subnet applicatif"
-  value       = azurerm_subnet.app.id
-}
+resource "azurerm_public_ip" "main" {
+  name                = "pip-bonus-${var.environment}"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  allocation_method   = "Static"
+  sku                 = var.environment == "prod" ? "Standard" : "Basic"
 
-output "subnet_db_id" {
-  description = "ID du subnet base de données"
-  value       = azurerm_subnet.db.id
-}
-
-output "resource_group_name" {
-  description = "Nom du Resource Group réseau"
-  value       = azurerm_resource_group.network.name
+  tags = {
+    environment = var.environment
+    critical    = var.environment == "prod" ? "yes" : "no"
+  }
 }
 ```
 
@@ -410,55 +421,75 @@ output "resource_group_name" {
 
 ---
 
-### 📝 Étape 4.2 - Stack applicative : consommer le state réseau
+### 📝 Étape 4.2 - Créer une ressource uniquement si condition vraie (if/else)
 
-Créez un dossier `tp-bonus-remote-state/app/`. C'est la stack "application", qui a besoin du subnet créé par l'équipe réseau.
+Dans le même projet, ajoutez une variable booléenne `enable_bastion` et créez un Bastion Host uniquement si elle vaut `true`.
 
 **Ce que vous devez faire :**
 
-1. Déclarez un `data "terraform_remote_state"` pointant vers le backend de la stack réseau.
-2. Utilisez `data.terraform_remote_state.network.outputs.subnet_app_id` pour associer une NIC ou un NSG au bon subnet — **sans dupliquer ni copier aucun ID en dur**.
-3. Lancez `terraform plan` depuis `app/` et vérifiez que les IDs sont bien résolus.
+1. Déclarez `enable_bastion` (bool) avec `false` par défaut.
+2. Créez une ressource `azurerm_subnet` nommée `AzureBastionSubnet` seulement si `enable_bastion = true`.
+3. Créez la ressource `azurerm_bastion_host` avec le même principe.
+4. Utilisez un output ternaire pour afficher un message clair selon que le Bastion est créé ou non.
 
-> ⚠️ `terraform_remote_state` lit le state **au moment du plan/apply**. Si la stack réseau n'a pas encore été appliquée, le plan échouera. C'est un couplage fort entre stacks — comparez avec l'approche `data source` classique qui interroge Azure directement.
+> ⚠️ Terraform n'a pas de bloc `if {}` autour des ressources. Le "if/else" se fait via `count` (0/1) ou `for_each` conditionnel.
 
 **Questions de réflexion :**
-- Quelle est la différence entre `terraform_remote_state` et un `data "azurerm_subnet"` classique ?
-- Qui contrôle ce qu'une stack expose à l'extérieur ?
+- Pourquoi `count = var.enable_bastion ? 1 : 0` est-il une forme de if/else ?
+- Quelle différence entre conditionner une ressource (avec `count`) et conditionner un attribut (avec un ternaire) ?
 
 {::nomarkdown}
 <details><summary>Solution - Étape 4.2</summary>
 {:/nomarkdown}
 
-`app/main.tf` :
+`variables.tf` (ajout) :
 
 ```hcl
-data "terraform_remote_state" "network" {
-  backend = "azurerm"
+variable "enable_bastion" {
+  type        = bool
+  description = "Active ou non le déploiement du Bastion"
+  default     = false
+}
+```
 
-  config = {
-    resource_group_name  = "rg-tfstate"
-    storage_account_name = "stftstate..."
-    container_name       = "tfstate"
-    key                  = "bonus-network.tfstate"
-  }
+`main.tf` (extrait) :
+
+```hcl
+resource "azurerm_virtual_network" "main" {
+  name                = "vnet-bonus-${var.environment}"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  address_space       = ["10.20.0.0/16"]
 }
 
-# Utilisation directe des outputs de la stack réseau
-locals {
-  subnet_app_id = data.terraform_remote_state.network.outputs.subnet_app_id
+resource "azurerm_subnet" "bastion" {
+  count                = var.enable_bastion ? 1 : 0
+  name                 = "AzureBastionSubnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.20.1.0/24"]
 }
 
-resource "azurerm_network_interface" "app" {
-  name                = "nic-bonus-app"
-  location            = "West Europe"
-  resource_group_name = data.terraform_remote_state.network.outputs.resource_group_name
+resource "azurerm_bastion_host" "main" {
+  count               = var.enable_bastion ? 1 : 0
+  name                = "bas-bonus-${var.environment}"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   ip_configuration {
-    name                          = "ipconfig"
-    subnet_id                     = local.subnet_app_id
-    private_ip_address_allocation = "Dynamic"
+    name                 = "configuration"
+    subnet_id            = azurerm_subnet.bastion[0].id
+    public_ip_address_id = azurerm_public_ip.main.id
   }
+}
+```
+
+`outputs.tf` :
+
+```hcl
+output "bastion_status" {
+  description = "Etat du bastion"
+  value       = var.enable_bastion ? "Bastion deploye" : "Bastion non deploye"
 }
 ```
 
