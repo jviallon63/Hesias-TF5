@@ -10,27 +10,20 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = ["10.0.0.0/16"]
 }
 
-#resource "azurerm_subnet" "main" {
-#  count                = length(var.subnets)
-
-#  name                 = "snet-${var.subnets[count.index].name}"
-#  resource_group_name  = azurerm_resource_group.shared.name
-#  virtual_network_name = azurerm_virtual_network.vnet.name
-#  address_prefixes     = [var.subnets[count.index].address_prefix]
-#}
-
-#resource "azurerm_subnet" "snet_prod" {
-#  name                 = "snet-prod"
-#  resource_group_name  = azurerm_resource_group.shared.name
-#  virtual_network_name = azurerm_virtual_network.vnet.name
-#  address_prefixes     = ["10.0.2.0/24"]
-#}
-
 resource "azurerm_subnet" "main" {
-  for_each             = var.subnets
+  count                = length(var.subnets)
 
-  name                 = "snet-${each.key}"
+  name                 = "snet-${var.subnets[count.index].name}"
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [each.value.address_prefix]
+  address_prefixes     = [var.subnets[count.index].address_prefix]
 }
+
+#resource "azurerm_subnet" "main" {
+#  for_each             = var.subnets
+
+#  name                 = "snet-${each.key}"
+#  resource_group_name  = azurerm_resource_group.shared.name
+#  virtual_network_name = azurerm_virtual_network.vnet.name
+#  address_prefixes     = [each.value.address_prefix]
+#}

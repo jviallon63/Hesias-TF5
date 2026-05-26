@@ -292,8 +292,9 @@ Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées 
 
 1. Dans `shared/variables.tf`, déclarez une variable `subnets` de type `list(object)` avec les attributs `name` et `address_prefix`. Initialisez-la avec `snet-staging` et `snet-prod`.
 2. Dans `shared/main.tf`, remplacez les deux blocs `azurerm_subnet` par une seule ressource utilisant `count`.
-3. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
-4. Ajoutez `snet-dev` **en fin de liste** (adress_prefix = `10.0.3.0/24`) dans la variable et appliquez vos modification.
+3. Créer `shared/output.tf` qui renvoit les noms des subnets créés.
+4. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
+5. Ajoutez `snet-dev` **en fin de liste** (adress_prefix = `10.0.3.0/24`) dans la variable et appliquez vos modification.
 
 **Questions de réflexion :**
 - Pourquoi il est préférable de gérer la liste des subnets en tant que `variables` plutôt qu'en `locals` ?
@@ -333,6 +334,15 @@ resource "azurerm_subnet" "main" {
 }
 ```
 
+`shared/output.tf` :
+
+```hcl
+output "snet_name" {
+  description = "Noms des subnets créés"
+  value       = azurerm_subnet.main[*].name
+}
+```
+
 {::nomarkdown}
 </details>
 {:/nomarkdown}
@@ -347,8 +357,9 @@ Avant de commencer, détruisez les ressources du projet `shared/`. Vous allez re
 
 1. Dans `shared/variables.tf`, déclarez une variable `subnets` de type `map(object)` avec `address_prefix` comme seul attribut. Le nom du subnet devient la **clé de la map**. Initialisez-la avec `snet-staging` et `snet-prod`.
 2. Dans `shared/main.tf`, remplacez les deux blocs `azurerm_subnet` par une seule ressource utilisant `for_each`.
-3. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
-4. Ajoutez `snet-dev` à la map (`address_prefix = "10.0.3.0/24"`) et appliquez. Observez le plan.
+3. Créer `shared/output.tf` qui renvoit les noms des subnets créés.
+4. Appliquez. Vérifiez les adresses dans le state avec `terraform state list`.
+5. Ajoutez `snet-dev` à la map (`address_prefix = "10.0.3.0/24"`) et appliquez. Observez le plan.
 
 **Questions de réflexion :**
 - Quelle est la différence entre les adresses dans le state (`snet[0]` vs `snet["snet-staging"]`) ?
@@ -387,6 +398,18 @@ resource "azurerm_subnet" "main" {
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = [each.value.address_prefix]
+}
+```
+
+`shared/output.tf` :
+
+```hcl
+output "snet_name" {
+  description = "Noms des subnets créés"
+  value = {
+    for k, v in azurerm_subnet.main :
+    k => v.name
+  }
 }
 ```
 
