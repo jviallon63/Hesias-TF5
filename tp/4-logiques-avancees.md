@@ -284,7 +284,7 @@ module "nsg" {
 
 ### 📝 Étape 4.3.1 - Création des subnets avec count
 
-Avant de commencer, copiez `tp4-nsg/` dans un nouveau projet `tp4-nsg-count/`. Vous allez travailler sur le répertoire `shared/` pour créer les subnets de façon plus flexible, avec une ressource itérative et une liste d'objets définie en variable.
+Vous allez maintenant travailler sur le répertoire `shared/` pour créer les subnets de façon plus flexible, avec une ressource itérative et une liste d'objets définie en variable.
 
 **Ce que vous devez faire :**
 
@@ -300,7 +300,7 @@ Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées 
 - Supprimé le subnet `staging`. Que ce passe t'il ? Pourquoi ? 
 
 {::nomarkdown}
-<details><summary>Solution - Étape 4.2.1</summary>
+<details><summary>Solution - Étape 4.3.1</summary>
 {:/nomarkdown}
 
 `shared/variables.tf` :
@@ -308,12 +308,14 @@ Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées 
 ```hcl
 variable "subnets" {
   type = list(object({
-    name           = string
-    address_prefix = string
+    name             = string
+    address_prefix   = string
   }))
+  description = "Liste des subnets à créer"
+
   default = [
-    { name = "snet-staging", address_prefix = "10.0.1.0/24" },
-    { name = "snet-prod",    address_prefix = "10.0.2.0/24" },
+    { name = "staging", address_prefix = "10.0.1.0/24" },
+    { name = "prod",    address_prefix = "10.0.2.0/24" },
   ]
 }
 ```
@@ -321,9 +323,10 @@ variable "subnets" {
 `shared/main.tf` :
 
 ```hcl
-resource "azurerm_subnet" "snet" {
+resource "azurerm_subnet" "main" {
   count                = length(var.subnets)
-  name                 = var.subnets[count.index].name
+
+  name                 = "snet-${var.subnets[count.index].name}"
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = [var.subnets[count.index].address_prefix]
@@ -338,7 +341,7 @@ resource "azurerm_subnet" "snet" {
 
 ### 📝 Étape 4.3.2 - Création des subnets avec for_each
 
-Avant de commencer, détruisez toutes les ressources créées précédement. Copiez `tp4-nsg/` dans un nouveau projet `tp4-nsg-for_each/`. Vous allez refaire le même exercice mais en remplaçant `count` par `for_each`.
+Avant de commencer, détruisez les ressources du projet `shared/`. Vous allez remplacer `count` par `for_each` ainsi que la variable `list` en `map` qui est plus adapté avec le `for_each`.
 
 **Ce que vous devez faire :**
 
@@ -354,7 +357,7 @@ Avant de commencer, détruisez toutes les ressources créées précédement. Cop
 - Dans quel cas `count` doit être utilisé ?
 
 {::nomarkdown}
-<details><summary>Solution - Étape 4.2.2</summary>
+<details><summary>Solution - Étape 4.3.2</summary>
 {:/nomarkdown}
 
 `shared/variables.tf` :
@@ -364,9 +367,12 @@ variable "subnets" {
   type = map(object({
     address_prefix = string
   }))
+  description = "Liste des subnets à créer"
+
   default = {
-    "snet-staging" = { address_prefix = "10.0.1.0/24" }
-    "snet-prod"    = { address_prefix = "10.0.2.0/24" }
+    staging = { address_prefix = "10.0.1.0/24" }
+    dev     = { address_prefix = "10.0.3.0/24" }
+    prod    = { address_prefix = "10.0.2.0/24" }
   }
 }
 ```
@@ -374,9 +380,10 @@ variable "subnets" {
 `shared/main.tf` :
 
 ```hcl
-resource "azurerm_subnet" "snet" {
+resource "azurerm_subnet" "main" {
   for_each             = var.subnets
-  name                 = each.key
+
+  name                 = "snet-${each.key}"
   resource_group_name  = azurerm_resource_group.shared.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = [each.value.address_prefix]
@@ -391,4 +398,4 @@ resource "azurerm_subnet" "snet" {
 
 ## 🧹 Nettoyage
 
-Détruisez dans l'ordre : environnements d'abord (ils dépendent du réseau partagé), puis le réseau, puis `rg-tfstate`.
+Détruisez toutes les ressources `shared/`, `staging/` et `prod/`
