@@ -149,36 +149,33 @@ L'`apply` de l'infrastructure doit se faire manuellement une fois le plan valid�
 
 ### 📝 Étape 5.2.2 - Ajouter les steps de CI
 
-Ajoutez les contrôles suivants dans le job de plan, juste après `terraform init` :
+Vous allez améliorer les contrôles exécutés par le workflow en parallèle du job de plan. L'objectif est de donner toutes les informations nécessaires au reviewer pour valider la Pull Request dans de bonnes conditions. Vous allez ajouter les jobs suivants :
 
-1. `terraform fmt -check -recursive` : vérifie le formatage Terraform.
-2. `terraform validate` : vérifie la syntaxe et la cohérence du code Terraform.
-3. `tflint` : détecte les mauvaises pratiques et erreurs de configuration.
-4. `tfsec` : détecte les problèmes de sécurité sur le code IaC.
+- `terraform fmt -check -recursive` : vérifie le formatage Terraform.
+- `terraform validate` : vérifie la syntaxe et la cohérence du code Terraform.
+- `tflint` : détecte les mauvaises pratiques et erreurs de configuration. Installation locale : https://github.com/terraform-linters/tflint#installation
+- `tfsec` : détecte les problèmes de sécurité sur le code IaC. Installation locale : https://github.com/aquasecurity/tfsec#installation
 
-**Exemple de steps à ajouter :**
+**Ce que vous devez faire :**
 
-```yaml
-- name: Terraform Fmt
-  working-directory: ${{ env.TF_WORKING_DIR }}
-  run: terraform fmt -check -recursive
+1. Modifiez le workflow et ajoutez les jobs suivants. Ils doivent s'exécuter en parallèle du job `plan` :
 
-- name: Terraform Validate
-  working-directory: ${{ env.TF_WORKING_DIR }}
-  run: terraform validate
+| job_name | step | command |
+| --- | --- | --- |
+| `validate` | `format` | `terraform fmt -check -recursive` |
+| `validate` | `validate` | `terraform validate` |
+| `validate` | `linter` | `tflint` |
+| `security` | `security` | `tfsec` |
 
-- name: Setup TFLint
-  uses: terraform-linters/setup-tflint@v4
+> 💡 Toutes les commandes utilisées par la CI sont exécutables en local. N'hésitez pas à les tester : c'est une bonne pratique de valider localement que la CI peut s'exécuter sans problème avant de pousser le code.
 
-- name: Run TFLint
-  working-directory: ${{ env.TF_WORKING_DIR }}
-  run: tflint --init && tflint
+{::nomarkdown}
+<details><summary>Solution - Étape 5.2.2</summary>
+{:/nomarkdown}
 
-- name: Run tfsec
-  uses: aquasecurity/tfsec-action@v1.0.3
-  with:
-    working_directory: ${{ env.TF_WORKING_DIR }}
-```
+{::nomarkdown}
+</details>
+{:/nomarkdown}
 
 ---
 
