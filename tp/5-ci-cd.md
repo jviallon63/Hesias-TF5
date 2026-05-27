@@ -164,8 +164,30 @@ Vous allez améliorer les contrôles exécutés par le workflow en parallèle du
 | --- | --- | --- |
 | `validate` | `format` | `terraform fmt -check -recursive` |
 | `validate` | `validate` | `terraform validate` |
-| `validate` | `linter` | `tflint` |
+| `validate` | `linter` | `tflint --init && tflint` |
 | `security` | `security` | `tfsec` |
+
+
+**Aides :**
+
+- `terraform validate` nécessite un `terraform init` du projet avant l'exécution de la commande.
+- Pour exécuter `tflint`, utilisez :
+
+```yml
+- name: Setup TFLint
+  uses: terraform-linters/setup-tflint@v4
+```
+
+- Pour `tfsec`, utilisez :
+
+```yml
+- name: Install tfsec
+  run: |
+    curl -sSL -o /tmp/tfsec https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64
+    chmod +x /tmp/tfsec
+    sudo mv /tmp/tfsec /usr/local/bin/tfsec
+    tfsec --version
+```
 
 > 💡 Toutes les commandes utilisées par la CI sont exécutables en local. N'hésitez pas à les tester : c'est une bonne pratique de valider localement que la CI peut s'exécuter sans problème avant de pousser le code.
 
@@ -176,6 +198,67 @@ Vous allez améliorer les contrôles exécutés par le workflow en parallèle du
 Dans `.github/workflows/terraform.yml` :
 
 ```yml
+...
+jobs:
+  validate:
+    name: Validate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform fmt (format)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Linter
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: tflint --init && tflint
+
+  security:
+    name: Security
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tfsec
+        run: |
+          curl -sSL -o /tmp/tfsec https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64
+          chmod +x /tmp/tfsec
+          sudo mv /tmp/tfsec /usr/local/bin/tfsec
+          tfsec --version
+
+      - name: tfsec
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: tfsec
+
+  plan:
+  ...
 ```
 
 {::nomarkdown}
