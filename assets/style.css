@@ -338,6 +338,30 @@ ul, ol { padding-left: 1.5em; }
 li { margin-bottom: 6px; }
 
 /* ============================================
+   TABLES
+   ============================================ */
+table {
+  width: 100%;
+  margin: 24px 0;
+  border-collapse: collapse;
+  border: 1px solid var(--tf-border);
+  background: #fff;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  border: 1px solid var(--tf-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--tf-surface);
+  font-weight: 700;
+}
+
+/* ============================================
    SOLUTION (details/summary)
    ============================================ */
 details {

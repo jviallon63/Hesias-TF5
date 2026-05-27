@@ -173,6 +173,11 @@ Vous allez améliorer les contrôles exécutés par le workflow en parallèle du
 <details><summary>Solution - Étape 5.2.2</summary>
 {:/nomarkdown}
 
+Dans `.github/workflows/terraform.yml` :
+
+```yml
+```
+
 {::nomarkdown}
 </details>
 {:/nomarkdown}
