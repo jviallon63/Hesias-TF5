@@ -7,7 +7,7 @@ title: "TP 5 - CI/CD Terraform avec GitHub Actions"
 
 Jusqu'ici vous exécutez Terraform depuis votre machine. Dans une vraie équipe, personne ne devrait appliquer de l'infrastructure depuis son laptop : les credentials diffèrent, l'historique est perdu et deux personnes peuvent appliquer en même temps. La solution : **automatiser le workflow Terraform dans une CI/CD**.
 
-Dans ce TP vous allez brancher le projet `tp4-nsg/` sur GitHub Actions.
+Dans ce TP vous allez brancher le projet `tp4-nsg/shared` sur GitHub Actions.
 
 ---
 
@@ -18,21 +18,19 @@ Dans ce TP vous allez brancher le projet `tp4-nsg/` sur GitHub Actions.
 1. Créer un Service Principal Azure et configurer les secrets GitHub
 2. Écrire un workflow qui s'exécute sur chaque PR.
 3. Le plan est remonté en commentaire pour la revue.
-4. Vosu ajouter les outils pour valider la PR (linters, validate, security).
+4. Vous ajouter les outils pour valider la PR (linters, validate, security).
 
 </div>
 
 ---
 
-## 🗂️ Partie 5.1 - Authentification Azure depuis GitHub Actions
+## 🗂️ Partie 5.1 - Pré requis, initialisation de l'environnement
 
-GitHub Actions doit pouvoir s'authentifier sur Azure pour exécuter Terraform. La méthode la plus simple est un **Service Principal** dont les credentials sont stockés comme **secrets GitHub**. Dans ce TP nous allons pas allez jusqu'à l'authentification OIDC, mais dans un contexte d'entreprise c'est une solution à privilégier.
+GitHub Actions doit pouvoir s'authentifier sur Azure pour exécuter Terraform. La méthode la plus simple est un **Service Principal** dont les credentials sont stockés comme **secrets GitHub**. Dans ce TP nous n'allons pas allez jusqu'à l'authentification OIDC, mais dans un contexte d'entreprise c'est une solution à privilégier.
 
 ---
 
-### 📝 Étape 5.1.1 - Pré requis, initialisation de l'environnement
-
-#### Créer le Service Principal
+### 📝 Étape 5.1.1 - Authentification Azure depuis GitHub Actions
 
 Un Service Principal est une identité applicative Azure (équivalent d'un compte de service). Il sera limité au périmètre dont GitHub Actions a besoin.
 
@@ -41,57 +39,80 @@ Un Service Principal est une identité applicative Azure (équivalent d'un compt
 1. Créez un Service Principal avec le rôle `Contributor` sur votre abonnement via Azure CLI :
 
 ```bash
-az ad sp create-for-rbac \
-  --name "sp-github-terraform" \
-  --role Contributor \
-  --scopes /subscriptions/<SUBSCRIPTION_ID> \
-  --sdk-auth
+az ad sp create-for-rbac --name "sp-tp-terraform-<PRENOM>" --role Contributor --scopes /subscriptions/<SUBSCRIPTION_ID> --sdk-auth
 ```
 
-2. Copiez le JSON retourné — il contient les quatre valeurs dont Terraform a besoin.
-3. Dans votre dépôt GitHub, allez dans **Settings → Secrets and variables → Actions** et créez le secret `ARM_CLIENT_SECRET` :
+2. Copiez les informations du JSON retourné — il contient les quatres valeurs dont Terraform a besoin : `clientId`, `clientSecret`, `subscriptionId` et `tenantId`
+3. Gardez précieusement la valeur `clientSecret` : vous l'utiliserez à l'étape suivante pour créer le secret GitHub `ARM_CLIENT_SECRET`.
+
+---
+
+### 📝 Étape 5.1.2 - Initialiser le dépôt GitHub
+
+Téléchargez le code [ici](tp5-init.zip) et décompressez le dans un dossier local de travail, puis initialisez le dépôt Git en suivant les étapes ci-dessous.
+
+**Ce que vous devez faire :**
+
+1. Créez un dépôt vide sur GitHub.
+2. Dans votre terminal, positionnez-vous dans le dossier du projet extrait du zip, puis initialisez Git et préparez le premier commit :
+
+```bash
+git init
+git branch -M main
+git add .
+git commit -m "Initial commit"
+```
+
+3. Ajoutez le dépôt GitHub comme remote et poussez le code sur `main` :
+
+```bash
+git remote add origin https://github.com/<VOTRE_COMPTE>/<VOTRE_DEPOT>.git
+git push -u origin main
+```
+
+4. Une fois le dépôt créé, allez dans **Settings → Secrets and variables → Actions** et ajoutez le secret dans **New repository secret** : `ARM_CLIENT_SECRET` avec la valeur `clientSecret` récupéré précédement.
 
 > 💡 Le provider `azurerm` lit automatiquement cette variable d'environnement pour s'authentifier. Aucune credential ne doit apparaître dans vos fichiers `.tf`.
 
 ---
 
-#### Adapter le projet pour la CI
+### 📝 Étape 5.1.3 - Initialiser le state remote
 
-Le projet `tp4-nsg/` utilise un backend distant — c'est déjà une bonne base. Vérifiez que :
-
-1. Adapter le `provider "azurerm"` partout pour ajouter les 3 variables nécessaire à l'authentification de Terraform. 
-| Secret GitHub | Valeur |
-|---|---|
-| `ARM_CLIENT_ID` | `clientId` |
-| `ARM_SUBSCRIPTION_ID` | `subscriptionId` |
-| `ARM_TENANT_ID` | `tenantId` |
-
-2. Aucun `.terraform.lock.hcl` ou `*.tfstate` local n'est committé (vérifiez votre `.gitignore`).
+Le projet fourni pour ce TP contient un répertoire `state` dans le zip. Ce répertoire permet de créer le Storage Account qui servira de backend distant Terraform.
 
 **Ce que vous devez faire :**
 
-Ajoutez (ou vérifiez) un `.gitignore` à la racine du projet :
+1. Depuis votre terminal, placez-vous dans le répertoire `state`.
+2. Exécutez les commandes Terraform pour créer l'infrastructure.
+3. Notez le nom du Storage Account généré : vous en aurez besoin pour configurer le backend distant.
 
-```gitignore
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfplan
-.terraform.lock.hcl
-crash.log
-crash.*.log
-*.tfvars
-*.tfvars.json
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-```
+> 💡 **À noter :**
+> Le nom du Storage Account est généré aléatoirement grâce au provider `random`.
+> Le projet `state` utilise un state local, mais ce state n'est pas versionné dans Git (vérifiez le `.gitignore`).
 
 ---
 
-#### Créer le workflow
+### 📝 Étape 5.1.4 - Adapter le projet pour la CI
+
+Placez-vous dans le projet `terraform` : vous allez configurer le backend distant et le provider Azure.
+
+**Ce que vous devez faire :**
+
+1. Configurez le backend remote avec le nom du Storage Account créé précédemment.
+2. Ajoutez les variables nécessaires à la connexion Azure dans le provider `azurerm`, avec les informations récupérées lors de la création du Service Principal (`clientId`, `subscriptionId`, `tenantId`)
+3. Générez un plan Terraform pour valider le bon fonctionnement du projet.
+
+> 💡 Si le plan est un succès, n'oubliez pas de commiter puis de pousser votre code sur votre dépôt GitHub :
+>
+> ```bash
+> git add .
+> git commit -m "Configure backend and Azure provider"
+> git push origin main
+> ```
+
+---
+
+## 🗂️ Partie 5.2 - Créer le workflow
 
 1. Créez la structure suivante dans votre dépôt :
 
@@ -103,7 +124,7 @@ override.tf.json
 
 2. Appliquer le template suivant. Le workflow s'execute à chaque PR sur mai, le `CLIENT_SECRET` est exporté depuis les secrets github, 4 steps existe : init, plan, apply destroy.
 
-### 5.1.2 - Créer le workflow
+### 5.1.4 - Créer le workflow
 
 **Ce que vous devez faire :**
 
