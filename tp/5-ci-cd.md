@@ -43,7 +43,6 @@ az ad sp create-for-rbac --name "sp-tp-terraform-<PRENOM>" --role Contributor --
 ```
 
 2. Copiez les informations du JSON retourné — il contient les quatres valeurs dont Terraform a besoin : `clientId`, `clientSecret`, `subscriptionId` et `tenantId`
-3. Gardez précieusement la valeur `clientSecret` : vous l'utiliserez à l'étape suivante pour créer le secret GitHub `ARM_CLIENT_SECRET`.
 
 ---
 
@@ -70,7 +69,11 @@ git remote add origin https://github.com/<VOTRE_COMPTE>/<VOTRE_DEPOT>.git
 git push -u origin main
 ```
 
-4. Une fois le dépôt créé, allez dans **Settings → Secrets and variables → Actions** et ajoutez le secret dans **New repository secret** : `ARM_CLIENT_SECRET` avec la valeur `clientSecret` récupéré précédement.
+4. Une fois le dépôt créé, allez dans **Settings → Secrets and variables → Actions** et ajoutez les secrets dans **New repository secret** : 
+- `ARM_CLIENT_ID` = `clientId`
+- `ARM_CLIENT_SECRET` = `clientSecret`
+- `ARM_SUBSCRIPTION_ID` = `subscriptionId`
+- `ARM_TENANT_ID` = `tenantId`
 
 > 💡 Le provider `azurerm` lit automatiquement cette variable d'environnement pour s'authentifier. Aucune credential ne doit apparaître dans vos fichiers `.tf`.
 
@@ -83,24 +86,19 @@ Le projet fourni pour ce TP contient un répertoire `state` dans le zip. Ce rép
 **Ce que vous devez faire :**
 
 1. Depuis votre terminal, placez-vous dans le répertoire `state`.
-2. Exécutez les commandes Terraform pour créer l'infrastructure.
+2. Exécutez localement les commandes Terraform pour créer l'infrastructure.
 3. Notez le nom du Storage Account généré : vous en aurez besoin pour configurer le backend distant.
 
 > 💡 **À noter :**
 > Le nom du Storage Account est généré aléatoirement grâce au provider `random`.
 > Le projet `state` utilise un state local, mais ce state n'est pas versionné dans Git (vérifiez le `.gitignore`).
 
----
-
-### 📝 Étape 5.1.4 - Adapter le projet pour la CI
-
 Placez-vous dans le projet `terraform` : vous allez configurer le backend distant et le provider Azure.
 
 **Ce que vous devez faire :**
 
 1. Configurez le backend remote avec le nom du Storage Account créé précédemment.
-2. Ajoutez les variables nécessaires à la connexion Azure dans le provider `azurerm`, avec les informations récupérées lors de la création du Service Principal (`clientId`, `subscriptionId`, `tenantId`)
-3. Générez un plan Terraform pour valider le bon fonctionnement du projet.
+2. Générez un plan Terraform pour valider le bon fonctionnement du projet.
 
 > 💡 Si le plan est un succès, n'oubliez pas de commiter puis de pousser votre code sur votre dépôt GitHub :
 >
@@ -114,332 +112,76 @@ Placez-vous dans le projet `terraform` : vous allez configurer le backend distan
 
 ## 🗂️ Partie 5.2 - Créer le workflow
 
-1. Créez la structure suivante dans votre dépôt :
+Le projet importé contient déjà un workflow GitHub Actions dans `.github/workflows/terraform.yml`.
+Ce workflow exécute les commandes Terraform suivantes : `init`, `plan`, `apply` et `destroy`.
 
-```
-.github/
-  workflows/
-    terraform.yml
-```
-
-2. Appliquer le template suivant. Le workflow s'execute à chaque PR sur mai, le `CLIENT_SECRET` est exporté depuis les secrets github, 4 steps existe : init, plan, apply destroy.
-
-### 5.1.4 - Créer le workflow
+### 📝 Étape 5.2.1 - Tester l'exécution du workflow
 
 **Ce que vous devez faire :**
 
-1. Adapter chaque step pour excuter les commandes terraform adéquates.
-2. Le plan doit utiliser -out et capturer la sortie.
-5. Convertir le plan binaire en texte lisible avec `terraform show -no-color tfplan`.
-6. Poster ce texte en commentaire de la PR (mettre à jour le commentaire si il existe déjà).
-7. Échouer le workflow si le plan a retourné une erreur.
+1. Depuis votre termine, créez une branche de travail : `git checkout -b feature/test-workflow`
+2. Faites une modification dans le dossier `terraform/` (par exemple une description, un tag, ou une règle).
+3. Commitez et poussez votre branche : `git add . && git commit -m "Test workflow terraform" && git push -u origin feature/test-workflow`
+4. Ouvrez une Pull Request (PR) vers `main` depuis GitHub.
+5. Vérifiez dans l'onglet **Actions** que le workflow démarre automatiquement.
+6. Vérifiez dans la PR que le plan Terraform est publié en commentaire.
 
 > 💡 **Pourquoi `-out=tfplan` ?**
-> Sans ce flag, `plan` et `apply` font chacun leur propre calcul. Entre les deux, une autre personne peut avoir modifié l'infrastructure ou poussé un nouveau commit. Avec `-out`, l'`apply` exécute **exactement** ce qui a été planifié et affiché dans la PR — rien de plus, rien de moins.
+> Sans ce flag, `plan` et `apply` font chacun leur propre calcul. Entre les deux, une autre personne peut avoir modifié l'infrastructure ou poussé un nouveau commit. Avec `-out`, l'`apply` exécute **exactement** ce qui a été planifié et affiché dans la PR, rien de plus, rien de moins.
 
-{::nomarkdown}
-<details><summary>Solution - terraform-plan.yml</summary>
-{:/nomarkdown}
+> 💡 **Analyse du plan**
+> Le step `Comment Plan On PR` publie le résultat du plan directement dans la PR pour faciliter la revue humaine.
 
-```yaml
-name: Terraform Plan
+**Questions de réflexion :**
+- Pourquoi `continue-on-error: true` est-il utilisé sur le step `plan` ?
 
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'tp4-nsg/**'
-      - '.github/workflows/terraform-plan.yml'
+L'`apply` de l'infrastructure doit se faire manuellement une fois le plan validé. Pour déclencher manuellement le workflow, le fichier `.github/workflows/terraform.yml` doit être présent sur la branche `main`. Mergez votre PR, puis :
 
-env:
-  TF_WORKING_DIR: tp4-nsg
-  ARM_CLIENT_ID:       ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET:   ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
-
-jobs:
-  plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write   # nécessaire pour poster un commentaire
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.9"
-
-      - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
-
-      - name: Terraform Plan
-        id: plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform plan -no-color -input=false -out=tfplan
-        continue-on-error: true   # on veut poster le résultat même en cas d'erreur
-
-      - name: Afficher le plan en texte lisible
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform show -no-color tfplan > plan.txt
-
-      - name: Poster le plan en commentaire de PR
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const raw = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan.txt', 'utf8');
-
-            // GitHub limite les commentaires à ~65 536 caractères
-            const plan = raw.length > 60000
-              ? raw.substring(0, 60000) + '\n\n> ⚠️ Plan tronqué — voir les logs du workflow pour la version complète.'
-              : raw;
-
-            const status = '${{ steps.plan.outcome }}' === 'success' ? '✅' : '❌';
-            const body = `## ${status} Terraform Plan — \`${{ github.head_ref }}\`
-
-            <details>
-            <summary>Afficher le plan complet</summary>
-
-            \`\`\`hcl
-            ${plan}
-            \`\`\`
-            </details>
-
-            *Déclenché par @${{ github.actor }} · commit \`${{ github.sha.substring(0,7) }}\`*`;
-
-            // Recherche un commentaire existant pour l'écraser plutôt d'en créer un nouveau à chaque push
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo:  context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes('Terraform Plan')
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner:      context.repo.owner,
-                repo:       context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner:        context.repo.owner,
-                repo:         context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
-
-      - name: Échouer si le plan a retourné une erreur
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-## 🗂️ Partie 5.3 - Workflow Apply manuel
-
-Le workflow Apply doit être **explicitement déclenché par un humain**, après revue du plan. On utilise `workflow_dispatch` pour cela.
-
----
-
-### 📝 Étape 5.3.1 - Écrire le workflow Apply
-
-Créez `.github/workflows/terraform-apply.yml`.
-
-**Ce que le workflow doit faire :**
-
-1. Se déclencher uniquement via `workflow_dispatch` (bouton manuel dans GitHub Actions).
-2. Exporter les credentials Azure.
-3. Exécuter `terraform init`.
-4. Exécuter `terraform plan -out=tfplan` — **dans le même job** que l'apply.
-5. Exécuter `terraform apply tfplan` — le plan sauvegardé garantit que l'apply est **identique au plan**.
+7. Retournez dans l'onglet **Actions**.
+8. Sélectionnez le workflow **Terraform CI/CD** dans la colonne à gauche.
+9. Dans **Run workflow**, sélectionnez la branche `main`, choisissez `apply` et déclenchez le workflow.
+10. Vérifiez que l'`apply` fonctionne comme attendu.
+11. Répétez l'opération en sélectionnant `destroy` pour nettoyer l'infrastructure.
 
 > 💡 **Plan et apply dans le même job** : c'est intentionnel. Si on séparait en deux jobs distincts, l'état d'Azure pourrait changer entre les deux. En exécutant les deux étapes dans le même job, la fenêtre de temps est de quelques secondes — et surtout, l'`apply` utilise le fichier binaire `tfplan` généré juste avant, pas un nouveau calcul.
 
-{::nomarkdown}
-<details><summary>Solution - terraform-apply.yml</summary>
-{:/nomarkdown}
+---
+
+### 📝 Étape 5.2.2 - Ajouter les steps de CI
+
+Ajoutez les contrôles suivants dans le job de plan, juste après `terraform init` :
+
+1. `terraform fmt -check -recursive` : vérifie le formatage Terraform.
+2. `terraform validate` : vérifie la syntaxe et la cohérence du code Terraform.
+3. `tflint` : détecte les mauvaises pratiques et erreurs de configuration.
+4. `tfsec` : détecte les problèmes de sécurité sur le code IaC.
+
+**Exemple de steps à ajouter :**
 
 ```yaml
-name: Terraform Apply
+- name: Terraform Fmt
+  working-directory: ${{ env.TF_WORKING_DIR }}
+  run: terraform fmt -check -recursive
 
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environnement cible'
-        required: true
-        default: 'staging'
-        type: choice
-        options: [staging, prod]
-      confirm:
-        description: 'Tapez "apply" pour confirmer'
-        required: true
-        type: string
+- name: Terraform Validate
+  working-directory: ${{ env.TF_WORKING_DIR }}
+  run: terraform validate
 
-env:
-  TF_WORKING_DIR: tp4-nsg
-  ARM_CLIENT_ID:       ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET:   ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
+- name: Setup TFLint
+  uses: terraform-linters/setup-tflint@v4
 
-jobs:
-  apply:
-    name: Terraform Apply — ${{ github.event.inputs.environment }}
-    runs-on: ubuntu-latest
-    # Bloque si la confirmation est incorrecte
-    if: github.event.inputs.confirm == 'apply'
+- name: Run TFLint
+  working-directory: ${{ env.TF_WORKING_DIR }}
+  run: tflint --init && tflint
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.9"
-
-      - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        run: terraform init -input=false
-
-      - name: Terraform Plan
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        run: terraform plan -no-color -input=false -out=tfplan
-
-      - name: Terraform Apply
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        # -auto-approve est sûr ici car on applique le fichier tfplan,
-        # pas un nouveau plan calculé au moment de l'apply
-        run: terraform apply -auto-approve tfplan
+- name: Run tfsec
+  uses: aquasecurity/tfsec-action@v1.0.3
+  with:
+    working_directory: ${{ env.TF_WORKING_DIR }}
 ```
 
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
 ---
-
-## 🗂️ Partie 5.4 - Workflow Destroy manuel
-
-Le Destroy est l'opération la plus dangereuse — il supprime de l'infrastructure réelle. Il doit être **difficile à déclencher accidentellement**.
-
----
-
-### 📝 Étape 5.4.1 - Écrire le workflow Destroy
-
-Créez `.github/workflows/terraform-destroy.yml`.
-
-Le workflow reprend le même principe de confirmation que l'Apply, avec une étape supplémentaire : afficher le plan de destruction avant d'exécuter quoi que ce soit.
-
-{::nomarkdown}
-<details><summary>Solution - terraform-destroy.yml</summary>
-{:/nomarkdown}
-
-```yaml
-name: Terraform Destroy
-
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environnement à détruire'
-        required: true
-        type: choice
-        options: [staging, prod]
-      confirm:
-        description: 'Tapez "destroy" pour confirmer (irréversible)'
-        required: true
-        type: string
-
-env:
-  TF_WORKING_DIR: tp4-nsg
-  ARM_CLIENT_ID:       ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET:   ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
-
-jobs:
-  destroy:
-    name: "⚠️ Terraform Destroy — ${{ github.event.inputs.environment }}"
-    runs-on: ubuntu-latest
-    if: github.event.inputs.confirm == 'destroy'
-    environment: production
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.9"
-
-      - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        run: terraform init -input=false
-
-      - name: Terraform Plan Destroy (aperçu)
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        run: terraform plan -destroy -no-color -input=false
-
-      - name: Terraform Destroy
-        working-directory: ${{ env.TF_WORKING_DIR }}/${{ github.event.inputs.environment }}
-        run: terraform destroy -auto-approve -input=false
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
-
----
-
-### 📝 Étape 5.4.2 - Tester le workflow complet
-
-**Ce que vous devez faire :**
-
-Reproduisez le workflow complet de bout en bout :
-
-1. **Plan** : ouvrez une PR qui modifie une règle NSG → vérifiez le commentaire dans la PR.
-2. **Apply** : mergez la PR puis déclenchez le workflow Apply manuellement depuis l'onglet Actions.
-3. **Vérification** : contrôlez dans le portail Azure que la règle NSG est bien mise à jour.
-4. **Destroy** : déclenchez le workflow Destroy sur l'environnement `staging` pour nettoyer.
-
----
-
-## 🗂️ Partie 5.5 - Bonnes pratiques et aller plus loin
-
-### Récapitulatif des bonnes pratiques appliquées
-
-| Pratique | Pourquoi |
-|---|---|
-| `-out=tfplan` sur le plan | Garantit que l'apply exécute exactement ce qui a été planifié |
-| `continue-on-error` + échec explicite | Permet de toujours poster le résultat du plan, même en cas d'erreur |
-| Confirmation textuelle (`destroy`) | Prévient les destructions accidentelles |
-| Environnement GitHub avec approbation | Second niveau de protection humaine avant apply/destroy |
-| `paths:` sur le déclencheur PR | Évite de re-planifier pour des changements de documentation |
-| Secrets GitHub, jamais dans le code | Les credentials ne doivent jamais apparaître dans l'historique git |
-
----
-
 
 ## 🧹 Nettoyage
 
-Détruisez toutes les ressources.
+Détruisez toutes les ressources en exécutant le workflow de destroy. Vérifiez sur le portail Azure que tout est bien détruit.
