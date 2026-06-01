@@ -204,6 +204,7 @@ Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctem
 
 Template `main.tf` : 
 
+```hcl
 resource "azurerm_network_interface" "nic" {
   ...
 
