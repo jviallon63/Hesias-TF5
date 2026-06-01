@@ -25,6 +25,7 @@ Créez un dossier `tp-bonus-postgres/` avec un `providers.tf`. Ce fichier doit d
 
 > 💡 Vous pouvez déclarer plusieurs providers dans le même bloc `terraform { required_providers { ... } }`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 1.1</summary>
 {:/nomarkdown}
@@ -54,6 +55,7 @@ provider "random" {}
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -71,6 +73,7 @@ Dans `main.tf`, utilisez la ressource `random_password` pour générer un mot de
 
 > 💡 Consultez la documentation : [registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password)
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 1.2</summary>
 {:/nomarkdown}
@@ -119,6 +122,7 @@ output "admin_password" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -151,6 +155,7 @@ Créez un `providers.tf` dans un dossier `tp-bonus-network-watcher/` et configur
 
 Appliquez ensuite la config et observez l'effet.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1</summary>
 {:/nomarkdown}
@@ -189,6 +194,7 @@ provider "azurerm" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -206,6 +212,7 @@ La clé : si vous déclarez vous-même `azurerm_network_watcher` dans votre code
 - Que se passe-t-il si `NetworkWatcherRG` existe déjà dans votre abonnement avant que vous déployiez votre code ?
 - Comment importeriez-vous le NetworkWatcher existant dans votre state ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2</summary>
 {:/nomarkdown}
@@ -241,6 +248,7 @@ terraform import azurerm_network_watcher.main \
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -279,6 +287,7 @@ Vous décidez que le label `rg` n'est pas assez explicite et souhaitez le renomm
 
 > 💡 Un bloc `moved` indique juste une migration d'adresse dans le state. **Il ne crée, modifie ni détruit rien dans Azure.** Il peut être supprimé une fois que toute l'équipe a appliqué le plan de migration.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2</summary>
 {:/nomarkdown}
@@ -312,6 +321,7 @@ Plan: 0 to add, 0 to change, 0 to destroy.
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -325,6 +335,7 @@ Le bloc `moved` fonctionne aussi pour déplacer une ressource hors d'un module o
 2. Remplacez la ressource directe dans `main.tf` par un appel de module.
 3. Ajoutez un bloc `moved` de `azurerm_resource_group.main` vers `module.rg.azurerm_resource_group.main`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.3</summary>
 {:/nomarkdown}
@@ -351,6 +362,7 @@ module "rg" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -375,6 +387,7 @@ Créez un dossier `tp-bonus-conditions/` avec `providers.tf`, `variables.tf`, `m
 
 > 💡 Le ternaire est une expression : il peut être utilisé dans n'importe quel attribut Terraform (`name`, `sku`, `tags`, `locals`, etc.).
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1</summary>
 {:/nomarkdown}
@@ -418,6 +431,7 @@ resource "azurerm_public_ip" "main" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -438,6 +452,7 @@ Dans le même projet, ajoutez une variable booléenne `enable_bastion` et créez
 - Pourquoi `count = var.enable_bastion ? 1 : 0` est-il une forme de if/else ?
 - Quelle différence entre conditionner une ressource (avec `count`) et conditionner un attribut (avec un ternaire) ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.2</summary>
 {:/nomarkdown}
@@ -496,6 +511,7 @@ output "bastion_status" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -519,6 +535,7 @@ Créez un dossier `tp-bonus-lifecycle/`. Déployez un PostgreSQL Flexible Server
 
 > 💡 `prevent_destroy` protège **uniquement contre les destructions explicites via Terraform**. Il ne protège pas contre une suppression manuelle depuis le portail Azure ou l'Azure CLI.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 5.1</summary>
 {:/nomarkdown}
@@ -562,6 +579,7 @@ Error: Instance cannot be destroyed
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -579,6 +597,7 @@ Dans beaucoup d'organisations, une **Azure Policy** applique automatiquement des
 4. Ajoutez `ignore_changes = [tags]` dans le bloc `lifecycle` du Resource Group.
 5. Relancez `terraform plan` : la dérive sur les tags doit être ignorée.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 5.2</summary>
 {:/nomarkdown}
@@ -604,6 +623,7 @@ resource "azurerm_resource_group" "app" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -617,6 +637,7 @@ Pour certaines ressources (certificats, règles de sécurité), Terraform doit d
 2. Activez `create_before_destroy = true` sur le NSG.
 3. Modifiez le nom du NSG (ce qui force une recreation) et observez l'ordre des opérations dans le `plan` : `(+) create` apparaît avant `(-) destroy`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 5.3</summary>
 {:/nomarkdown}
@@ -644,7 +665,7 @@ resource "azurerm_network_security_group" "app" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
-
+-->
 ---
 
 ### 💡 Pour aller encore plus loin

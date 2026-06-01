@@ -64,6 +64,7 @@ resource "azurerm_storage_container" "tfstate" {
 - Pourquoi ne peut-on pas utiliser un backend distant pour stocker le state du Storage Account lui-même ?
 - Pourquoi nous n'activons pas le locking sur le storage account pour sécuriser le state ? 
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.1.1</summary>
 {:/nomarkdown}
@@ -124,6 +125,7 @@ resource "azurerm_storage_container" "tfstate" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -168,6 +170,7 @@ Initialisez et appliquez votre projet depuis le répertoire `shared/`.
 **Questions de réflexion :**
 - Pourquoi le réseau est-il dans un répertoire `shared/` séparé des NSG ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2.1</summary>
 {:/nomarkdown}
@@ -233,6 +236,7 @@ Vérifiez dans le portail Azure : un blob `shared.tfstate` doit être apparu dan
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -283,6 +287,7 @@ resource "azurerm_subnet_network_security_group_association" "staging" {
 - Pourquoi utilise-t-on un data source pour le subnet plutôt qu'une référence directe ?
 - Quel est l'inconvenient de cette solution ? Imaginez une infrastructure avec x subnets et chacun des dizaines de NSG.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.2.3</summary>
 {:/nomarkdown}
@@ -360,6 +365,7 @@ Vérifiez dans le container `tfstate` : vous devez voir `staging.tfstate` et `pr
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -390,6 +396,7 @@ Après l'import :
 - Que contient le state après l'import ? Utilisez `terraform state show` pour l'explorer.
 - Que se passe-t-il si vous lancez `terraform apply` sans avoir aligné la configuration avec la réalité Azure ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.3.1</summary>
 {:/nomarkdown}
@@ -424,6 +431,7 @@ aztfexport resource /subscriptions/37fe744e-5727-4031-a37a-f19348de8bf3/resource
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -444,6 +452,7 @@ Depuis le répertoire `staging/`, explorez le state avec les commandes suivantes
 | `terraform show` | ? |
 | `terraform show -json \| jq .` | ? |
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.4.1</summary>
 {:/nomarkdown}
@@ -460,6 +469,7 @@ Depuis le répertoire `staging/`, explorez le state avec les commandes suivantes
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 

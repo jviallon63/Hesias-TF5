@@ -52,6 +52,7 @@ Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module**
 5. Créez `outputs.tf`pour exposer les informations utiles.
 6. Générez votre **contrat du module** dans `README.md`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.1</summary>
 {:/nomarkdown}
@@ -134,6 +135,7 @@ output "nsg_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -150,6 +152,7 @@ Après la refactorisation tester le cycle Terraform pour créer toutes les resso
 **Questions de réflexion :**
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.3</summary>
 {:/nomarkdown}
@@ -189,6 +192,7 @@ output "nsg_staging_id" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -222,6 +226,7 @@ dynamic "security_rule" {
 - Comment générer automatiquement une priorité unique pour chaque règle à partir de son index ?
 - Avec le module et le dynamic block vous pouvez facilement ajouter un environnement `dev`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.2.4</summary>
 {:/nomarkdown}
@@ -275,6 +280,7 @@ module "nsg" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -300,6 +306,7 @@ Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées 
 - Pourquoi il est préférable de gérer la liste des subnets en tant que `variables` plutôt qu'en `locals` ?
 - Supprimé le subnet `staging`. Que ce passe t'il ? Pourquoi ? 
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.3.1</summary>
 {:/nomarkdown}
@@ -346,6 +353,7 @@ output "snet_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -367,6 +375,7 @@ Avant de commencer, détruisez les ressources du projet `shared/`. Vous allez re
 - Quelle est la différence en `list` et `map` ?
 - Dans quel cas `count` doit être utilisé ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.3.2</summary>
 {:/nomarkdown}
@@ -416,6 +425,7 @@ output "snet_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
