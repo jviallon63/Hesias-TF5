@@ -70,6 +70,7 @@ provider "azurerm" {
 }
 ```
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.1</summary>
 {:/nomarkdown}
@@ -103,6 +104,7 @@ terraform init
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -144,6 +146,7 @@ resource "azurerm_subnet" ... {
 - Quel est la différence entre le nom `azurerm_resource_group rg` et `name = rg-tp2-dev` ?
 - Comment créer un second subnet attaché au vnet `vnet-tp2-dev` ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.2</summary>
 {:/nomarkdown}
@@ -179,6 +182,7 @@ terraform apply
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -248,6 +252,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 }
 ```
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.1</summary>
 {:/nomarkdown}
@@ -313,6 +318,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -340,6 +346,7 @@ Refactorisez ensuite `main.tf` pour utiliser ces variables.
 **Questions de réflexion :**
 - Comment passer une variable depuis la ligne de commande ? Et depuis un fichier `.tfvars` ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.2</summary>
 {:/nomarkdown}
@@ -397,6 +404,7 @@ terraform plan -var="environment=recette"
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -418,6 +426,7 @@ Après l'apply, consultez les outputs avec la commande dédiée.
 
 > 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.3</summary>
 {:/nomarkdown}
@@ -452,6 +461,7 @@ terraform output vm_private_ip
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -474,6 +484,7 @@ terraform output vm_private_ip
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.1</summary>
 {:/nomarkdown}
@@ -503,6 +514,7 @@ terraform plan
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -531,6 +543,7 @@ resource "azurerm_virtual_machine_extension" "nginx" {
 **Questions de réflexion :**
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois ? L'extension est-elle réinstallée ?
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.2</summary>
 {:/nomarkdown}
@@ -558,6 +571,7 @@ terraform apply
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
@@ -582,6 +596,7 @@ terraform apply
 **Questions de réflexion :**
 - Pourquoi il est déconseillé de renommer les ressources en suivant la convention `snake_case` à ce moment là ? 
 
+<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.4.1</summary>
 {:/nomarkdown}
@@ -618,6 +633,7 @@ terraform-docs markdown table . > README.md
 {::nomarkdown}
 </details>
 {:/nomarkdown}
+-->
 
 ---
 
