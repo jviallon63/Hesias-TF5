@@ -204,7 +204,6 @@ Ajoutez dans `main.tf` les ressources suivantes, en les référençant correctem
 
 Template `main.tf` : 
 
-```hcl
 resource "azurerm_network_interface" "nic" {
   ...
 
@@ -248,7 +247,7 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 }
 ```
 
-<!---
+
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.1</summary>
 {:/nomarkdown}
@@ -314,7 +313,6 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -342,7 +340,6 @@ Refactorisez ensuite `main.tf` pour utiliser ces variables.
 **Questions de réflexion :**
 - Comment passer une variable depuis la ligne de commande ? Et depuis un fichier `.tfvars` ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.2</summary>
 {:/nomarkdown}
@@ -400,7 +397,6 @@ terraform plan -var="environment=recette"
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -422,7 +418,6 @@ Après l'apply, consultez les outputs avec la commande dédiée.
 
 > 💡 Consultez le graph généré avec `terraform graph -type=plan`. La sortie du graph utilise le language dot, générez une image avec `| dot -Tpng >graph.png`.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2.3</summary>
 {:/nomarkdown}
@@ -457,7 +452,6 @@ terraform output vm_private_ip
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
