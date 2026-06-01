@@ -70,7 +70,6 @@ provider "azurerm" {
 }
 ```
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.1</summary>
 {:/nomarkdown}
@@ -104,7 +103,6 @@ terraform init
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -146,7 +144,6 @@ resource "azurerm_subnet" ... {
 - Quel est la différence entre le nom `azurerm_resource_group rg` et `name = rg-tp2-dev` ?
 - Comment créer un second subnet attaché au vnet `vnet-tp2-dev` ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.1.2</summary>
 {:/nomarkdown}
@@ -182,7 +179,6 @@ terraform apply
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
