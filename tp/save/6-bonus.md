@@ -667,7 +667,3 @@ resource "azurerm_network_security_group" "app" {
 {:/nomarkdown}
 -->
 ---
-
-### 💡 Pour aller encore plus loin
-
-- Combinez `prevent_destroy = true` et `ignore_changes = [administrator_password]` sur votre serveur PostgreSQL pour simuler une gestion réaliste de prod : le mot de passe peut être changé hors de Terraform sans que celui-ci le réinitialise au prochain `apply`.
