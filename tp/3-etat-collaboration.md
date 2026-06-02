@@ -5,7 +5,7 @@ title: "TP 3 - State distant et gestion multi-environnements"
 
 # 📦 Contexte
 
-Votre équipe grossit, plusieurs développeurs travaillent sur la même infrastructure. Dans ce TP, vous allez migrer vers un **state distant** sur Azure Blob Storage, puis structurer un projet **multi-environnements** (staging, prod) en appliquant des **NSG** (Network Security Groups) sur un réseau partagé.s
+Votre équipe grossit, plusieurs développeurs travaillent sur la même infrastructure. Dans ce TP, vous allez migrer vers un **state distant** sur Azure Blob Storage, puis structurer un projet **multi-environnements** (staging, prod) en appliquant des **NSG** (Network Security Groups) sur un réseau partagé.
 
 ---
 
