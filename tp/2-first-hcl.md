@@ -475,7 +475,6 @@ terraform output vm_private_ip
 **Questions de réflexion :**
 - Que se passe-t-il si la ressource cherchée n'existe pas dans Azure au moment du `terraform plan` ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.1</summary>
 {:/nomarkdown}
@@ -505,7 +504,6 @@ terraform plan
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -534,7 +532,6 @@ resource "azurerm_virtual_machine_extension" "nginx" {
 **Questions de réflexion :**
 - Que se passe-t-il si vous relancez `terraform apply` une deuxième fois ? L'extension est-elle réinstallée ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3.2</summary>
 {:/nomarkdown}
@@ -562,7 +559,6 @@ terraform apply
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -587,7 +583,6 @@ terraform apply
 **Questions de réflexion :**
 - Pourquoi il est déconseillé de renommer les ressources en suivant la convention `snake_case` à ce moment là ? 
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.4.1</summary>
 {:/nomarkdown}
@@ -624,7 +619,6 @@ terraform-docs markdown table . > README.md
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 

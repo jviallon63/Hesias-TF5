@@ -19,7 +19,7 @@ variable "environment" {
     error_message = "La variable environment doit être 'dev', 'staging' ou 'prod'."
   }
 }
-
+/*
 variable "vm_size" {
   type        = string
   description = "Taille de la machine virtuelle Azure"
@@ -31,3 +31,4 @@ variable "admin_password" {
   description = "Mot de passe administrateur de la VM"
   sensitive   = true
 }
+*/

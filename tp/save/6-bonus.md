@@ -7,7 +7,7 @@ title: "TP Bonus - Aller plus loin avec Terraform"
 
 Vous avez fini les TP principaux ? Bravo. Ce TP bonus regroupe **5 exercices indépendants** pour explorer des fonctionnalités de Terraform et du provider `azurerm` qui n'ont pas été abordées. Ils peuvent être réalisés dans n'importe quel ordre. Chaque exercice est autonome et peut être déposé dans un dossier dédié.
 
----
+---—
 
 ## 🗂️ Exercice 1 - Base de données PostgreSQL avec mot de passe aléatoire
 

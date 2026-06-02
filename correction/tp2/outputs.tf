@@ -1,3 +1,4 @@
+/*
 output "vm_private_ip" {
   description = "Adresse IP privée de la VM"
   value       = azurerm_network_interface.nic.private_ip_address
@@ -12,3 +13,4 @@ output "vm_id" {
   description = "ID Azure de la VM"
   value       = azurerm_linux_virtual_machine.vm.id
 }
+*/

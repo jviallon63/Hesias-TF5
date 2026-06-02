@@ -42,6 +42,7 @@ resource "azurerm_managed_disk" "data_disk" {
   tags     = local.common_tags
 }
 
+/*
 resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-tp2-dev"
   location                        = azurerm_resource_group.rg.location
@@ -75,3 +76,4 @@ resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
 
   depends_on = [azurerm_linux_virtual_machine.vm]
 }
+*/
