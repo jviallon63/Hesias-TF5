@@ -148,7 +148,7 @@ Dans cette partie, vous allez **reproduire** puis **corriger** les erreurs les p
 
 ### 📝 Etape 7.3.1 - Erreur `Cycle: ...`
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 Vous creez une dependance circulaire entre 2 ressources.
 
@@ -174,7 +174,7 @@ resource "azurerm_resource_group" "b" {
 
 ### 📝 Etape 7.3.2 - Erreur `Invalid count argument`
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 `count` depend d'une valeur inconnue au moment du plan.
 
@@ -203,7 +203,7 @@ resource "azurerm_storage_account" "sa" {
 
 ### 📝 Etape 7.3.3 - Erreur `Provider configuration not present`
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 Un state contient des ressources creees avec un provider alias qui n'existe plus dans le code.
 
@@ -227,7 +227,7 @@ module.x.provider["registry.terraform.io/hashicorp/azurerm"].alias is required, 
 
 ### 📝 Etape 7.3.4 - Erreur `Reference to undeclared resource` (frequente)
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 Vous renommez une ressource mais oubliez de mettre a jour toutes les references.
 
@@ -241,7 +241,7 @@ Vous renommez une ressource mais oubliez de mettre a jour toutes les references.
 
 ### 📝 Etape 7.3.5 - Erreur `Error acquiring the state lock` (frequente)
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 Deux executions Terraform concurrentes tentent d'acceder au meme state distant.
 
@@ -261,7 +261,7 @@ terraform force-unlock <LOCK_ID>
 
 ### 📝 Etape 7.3.6 - Erreur `Resource already exists` (frequente)
 
-### 🧩 Scenario
+#### 🧩 Scenario
 
 La ressource existe dans Azure mais pas dans le state Terraform.
 
