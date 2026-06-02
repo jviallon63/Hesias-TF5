@@ -336,7 +336,7 @@ Ajoutez une **validation** sur `location` pour n'accepter que `"West Europe"`.
 
 Refactorisez ensuite `main.tf` pour utiliser ces variables.
 
-> 💡 Consultez la doc sur les [Custom Conditions](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions). Testez un passage de valeur invalide : `terraform plan -var="location="North Europe"`.
+> 💡 Consultez la doc sur les [Custom Conditions](https://developer.hashicorp.com/terraform/language/expressions/custom-conditions). Testez un passage de valeur invalide : `terraform plan -var="location=North Europe"`.
 
 **Questions de réflexion :**
 - Comment passer une variable depuis la ligne de commande ? Et depuis un fichier `.tfvars` ?
