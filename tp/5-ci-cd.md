@@ -191,7 +191,6 @@ Vous allez améliorer les contrôles exécutés par le workflow en parallèle du
 
 > 💡 Toutes les commandes utilisées par la CI sont exécutables en local. N'hésitez pas à les tester : c'est une bonne pratique de valider localement que la CI peut s'exécuter sans problème avant de pousser le code.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 5.2.2</summary>
 {:/nomarkdown}
@@ -265,7 +264,6 @@ jobs:
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
