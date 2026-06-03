@@ -14,11 +14,11 @@ title: "TP 7 - Maintenance Terraform, rollback et diagnostic d'erreurs"
 
 ---
 
-## 🗂️ Partie 7.2 - Rollback controle et maintenance corrective
+## 🗂️ Partie 7.1 - Rollback controle et maintenance corrective
 
 ---
 
-### 📝 Etape 7.2.1 - Rollback partiel avec `-target`
+### 📝 Etape 7.1.1 - Rollback partiel avec `-target`
 
 `-target` permet de limiter temporairement l'operation a un sous-ensemble du graphe.
 
@@ -38,7 +38,7 @@ terraform plan -target="azurerm_virtual_network.vnet"
 
 ---
 
-### 📝 Etape 7.2.2 - Forcer la recreation avec `-replace`
+### 📝 Etape 7.1.2 - Forcer la recreation avec `-replace`
 
 Quand une ressource est unhealthy, on peut forcer sa recreation de façon explicite.
 
@@ -57,7 +57,7 @@ terraform plan -replace="azurerm_virtual_network.vnet"
 
 ---
 
-### 📝 Etape 7.2.3 - Utiliser `taint` (legacy) pour conserver l'historique
+### 📝 Etape 7.1.3 - Utiliser `taint` (legacy) pour conserver l'historique
 
 Certaines equipes utilisent encore `terraform taint`.
 
@@ -78,22 +78,22 @@ terraform untaint azurerm_virtual_network.vnet
 
 ---
 
-## 🗂️ Partie 7.3 - Laboratoire des erreurs Terraform frequentes
+## 🗂️ Partie 7.2 - Laboratoire des erreurs Terraform frequentes
 
 Dans cette partie, vous allez **reproduire** puis **corriger** les erreurs les plus fréquentes. Limitez-vous à `terraform plan` pour tester et valider la correction. Il n'est pas nécessaire de déployer l'infrastructure.
 
-1. [Etude de case 7.3.1](tp7.3.1.zip)
-2. [Etude de case 7.3.2](tp7.3.2.zip)
-3. [Etude de case 7.3.3](tp7.3.3.zip)
-4. [Etude de case 7.3.4](tp7.3.4.zip)
-5. [Etude de case 7.3.5](tp7.3.5.zip)
+1. [Etude de case 7.2.1](tp7.2.1.zip)
+2. [Etude de case 7.2.2](tp7.2.2.zip)
+3. [Etude de case 7.2.3](tp7.2.3.zip)
+4. [Etude de case 7.2.4](tp7.2.4.zip)
+5. [Etude de case 7.2.5](tp7.2.5.zip)
 
-<!---
+<!--
 {::nomarkdown}
-<details><summary>Solution - Étape 7.3</summary>
+<details><summary>Solution - Étape 7.2.1</summary>
 {:/nomarkdown}
 
-**7.3.1**
+**7.2.1**
 
 Le cycle ne vient pas forcement d'une ressource "principale", mais parfois de references croisees dans des attributs secondaires (ici des `tags`).
 
@@ -120,36 +120,203 @@ Comment corriger : Remplacer les références par une valeur stable (variable/lo
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
----
 
-### 📝 Etape 7.3.1 - Erreur `Cycle: ...`
+{::nomarkdown}
+<details><summary>Solution - Étape 7.2.2</summary>
+{:/nomarkdown}
 
-#### 🧩 Scenario
+**7.2.2**
 
-Vous creez une dependance circulaire entre 2 ressources.
+L'erreur `Invalid count argument` apparait quand Terraform ne peut pas calculer `count` au moment du plan.
+
+Dans ce cas, `count` depend de `random_id.suffix.dec`, une valeur qui n'existe qu'apres la phase apply. La cardinalite d'une ressource (0, 1, n) doit toujours etre connue pendant le plan.
+
+Exemple problematique :
 
 ```hcl
-resource "azurerm_resource_group" "a" {
-  name     = "rg-a"
-  location = azurerm_resource_group.b.location
+resource "random_id" "suffix" {
+  byte_length = 2
 }
 
-resource "azurerm_resource_group" "b" {
-  name     = "rg-b"
-  location = azurerm_resource_group.a.location
+resource "azurerm_storage_account" "sa" {
+  count                    = random_id.suffix.dec > 0 ? 1 : 0
+  name                     = "sttp7${random_id.suffix.hex}"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
 }
 ```
 
-**Ce que vous devez faire :**
+Comment corriger : piloter `count` avec une entree connue au plan (variable, local statique, tfvars).
 
-1. Lancez `terraform plan` et observez l'erreur `Cycle`.
-2. Cassez la boucle en introduisant une valeur source stable (variable, local, data source).
-3. Revalidez avec `terraform plan`.
+```hcl
+variable "enable_storage" {
+  description = "Active la creation du compte de stockage"
+  type        = bool
+  default     = true
+}
+
+resource "random_id" "suffix" {
+  byte_length = 2
+}
+
+resource "azurerm_storage_account" "sa" {
+  count                    = var.enable_storage ? 1 : 0
+  name                     = "sttp7${random_id.suffix.hex}"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+```
+
+Pourquoi cela fonctionne :
+
+- `var.enable_storage` est connue des le plan.
+- Terraform sait donc immediatement s'il doit creer 0 ou 1 instance.
+- La valeur aleatoire peut toujours etre utilisee dans `name`, car elle n'influence plus la cardinalite.
+
+Verification attendue :
+
+```bash
+terraform plan -var="enable_storage=true"
+terraform plan -var="enable_storage=false"
+```
+
+Le premier plan propose la creation du storage account, le second n'en propose aucun, sans erreur de type `Invalid count argument`.
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+
+{::nomarkdown}
+<details><summary>Solution - Étape 7.2.4</summary>
+{:/nomarkdown}
+
+**7.2.4**
+
+L'erreur `Reference to undeclared resource` apparait lorsqu'une reference pointe vers une ressource qui n'est pas definie dans la configuration courante.
+
+Exemple problematique :
+
+```hcl
+resource "azurerm_subnet" "app" {
+  name                 = "snet-app"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.80.1.0/24"]
+}
+
+output "subnet_id" {
+  value = azurerm_subnet.web.id
+}
+```
+
+`azurerm_subnet.web` n'existe pas. Le seul label declare est `azurerm_subnet.app`.
+
+Comment corriger : aligner toutes les references avec les labels reels (resource, output, locals, modules).
+
+```hcl
+output "subnet_id" {
+  value = azurerm_subnet.app.id
+}
+```
+
+Bonnes pratiques :
+
+- Apres un renommage de ressource, rechercher toutes les references (`rg`, outputs, locals, modules).
+- Lancer `terraform validate` apres chaque refacto pour detecter ce type d'erreur tot.
+
+Verification attendue :
+
+```bash
+terraform validate
+terraform plan
+```
+
+`validate` doit passer sans erreur, puis `plan` doit s'executer sans message `Reference to undeclared resource`.
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+
+{::nomarkdown}
+<details><summary>Solution - Étape 7.2.5</summary>
+{:/nomarkdown}
+
+**7.2.5**
+
+L'erreur `Resource already exists` apparait quand Terraform tente de creer une ressource deja presente dans Azure mais absente du state local.
+
+Dans ce cas de test:
+
+- le groupe `NetworkWatcherRG` existe deja
+- le network watcher par defaut existe deja, avec un nom du type `NetworkWatcher_<region>`
+
+Exemple problematique :
+
+```hcl
+resource "azurerm_resource_group" "network_watcher" {
+  name     = "NetworkWatcherRG"
+  location = var.location
+}
+
+resource "azurerm_network_watcher" "default" {
+  name                = "NetworkWatcher_westeurope"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.network_watcher.name
+}
+```
+
+Comment corriger :
+
+1. Importer les ressources existantes dans le state Terraform.
+2. Variabiliser la region du network watcher pour construire son nom de facon generique.
+
+```hcl
+variable "network_watcher_region" {
+  type    = string
+  default = "westeurope"
+}
+
+locals {
+  network_watcher_name = "NetworkWatcher_${var.network_watcher_region}"
+}
+
+resource "azurerm_network_watcher" "default" {
+  name                = local.network_watcher_name
+  location            = var.network_watcher_region
+  resource_group_name = azurerm_resource_group.network_watcher.name
+}
+```
+
+Commandes d'import (a adapter):
+
+```bash
+terraform import azurerm_resource_group.network_watcher \
+  "/subscriptions/<SUB_ID>/resourceGroups/NetworkWatcherRG"
+
+terraform import azurerm_network_watcher.default \
+  "/subscriptions/<SUB_ID>/resourceGroups/NetworkWatcherRG/providers/Microsoft.Network/networkWatchers/NetworkWatcher_<REGION>"
+```
+
+Verification attendue :
+
+```bash
+terraform plan
+```
+
+Le plan doit revenir propre (pas de creation forcee des ressources deja existantes).
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+-->
 
 ---
 
-### 📝 Etape 7.3.2 - Erreur `Invalid count argument`
+### 📝 Etape 7.2.2 - Erreur `Invalid count argument`
 
 #### 🧩 Scenario
 
@@ -178,7 +345,7 @@ resource "azurerm_storage_account" "sa" {
 
 ---
 
-### 📝 Etape 7.3.3 - Erreur `Provider configuration not present`
+### 📝 Etape 7.2.3 - Erreur `Provider configuration not present`
 
 #### 🧩 Scenario
 
@@ -202,35 +369,25 @@ module.x.provider["registry.terraform.io/hashicorp/azurerm"].alias is required, 
 
 ---
 
-### 📝 Etape 7.3.4 - Erreur `Reference to undeclared resource` (frequente)
+### 📝 Etape 7.2.4 - Erreur `Reference to undeclared resource` (frequente)
 
 #### 🧩 Scenario
 
-Vous renommez une ressource mais oubliez de mettre a jour toutes les references.
+On référence une ressource qui n'existe pas 
 
-**Ce que vous devez faire :**
-
-1. Provoquez l'erreur en changeant le label d'une ressource.
-2. Corrigez toutes les references (`resource`, `output`, `module`, `locals`).
-3. Verifiez avec `terraform validate`.
 
 ---
 
-### 📝 Etape 7.3.6 - Erreur `Resource already exists` (frequente)
+### 📝 Etape 7.2.5 - Erreur `Resource already exists` (frequente)
 
 #### 🧩 Scenario
 
-La ressource existe dans Azure mais pas dans le state Terraform.
+On tente de creer `NetworkWatcherRG` et le network watcher par defaut, mais ils existent deja dans Azure.
 
 **Ce que vous devez faire :**
 
-1. Importez la ressource existante:
-
-```bash
-terraform import azurerm_resource_group.main /subscriptions/<SUB_ID>/resourceGroups/<RG_NAME>
-```
-
-2. Alignez le code HCL avec l'etat reel.
-3. Verifiez que `terraform plan` revient propre (0 a ajouter/0 a detruire attendu).
+1. Importez le RG `NetworkWatcherRG` et le network watcher existant dans le state.
+2. Variabilisez la region et utilisez-la en suffixe du nom: `NetworkWatcher_<region>`.
+3. Verifiez que `terraform plan` ne propose plus de recreation de ces ressources.
 
 ---
