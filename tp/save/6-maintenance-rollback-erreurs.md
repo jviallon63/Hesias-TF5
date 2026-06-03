@@ -3,22 +3,11 @@ layout: tp
 title: "TP 7 - Maintenance Terraform, rollback et diagnostic d'erreurs"
 ---
 
-# 🧰 Contexte
-
-Maintenir une infrastructure Terraform en production ne consiste pas seulement a faire `terraform apply`. Il faut savoir:
-- diagnostiquer une derive entre le code, le state et le cloud,
-- faire un rollback controle sans casser le reste,
-- corriger rapidement les erreurs Terraform les plus frequentes.
-
-Dans ce TP, vous allez pratiquer des situations reelles d'exploitation et de support.
-
----
-
 ## 🎯 Objectifs
 
 <div class="section objective">
 
-1. Utiliser un rollback controle avec `-target`, `-replace` et `taint`
+1. Utiliser un rollback controlé avec `-target`, `-replace` et `taint`
 2. Comprendre et corriger les erreurs Terraform frequentes
 
 </div>
@@ -39,7 +28,7 @@ Dans ce TP, vous allez pratiquer des situations reelles d'exploitation et de sup
 2. Lancez un plan cible sur une seule ressource:
 
 ```bash
-terraform plan -target="azurerm_network_security_group.main"
+terraform plan -target="azurerm_virtual_network.vnet"
 ```
 
 3. Appliquez ce plan cible.
@@ -51,14 +40,14 @@ terraform plan -target="azurerm_network_security_group.main"
 
 ### 📝 Etape 7.2.2 - Forcer la recreation avec `-replace`
 
-Quand une ressource est unhealthy, on peut forcer sa recreation de facon explicite.
+Quand une ressource est unhealthy, on peut forcer sa recreation de façon explicite.
 
 **Ce que vous devez faire :**
 
 1. Generez un plan avec recreation forcee:
 
 ```bash
-terraform plan -replace="azurerm_public_ip.main"
+terraform plan -replace="azurerm_virtual_network.vnet"
 ```
 
 2. Appliquez le plan.
@@ -68,7 +57,7 @@ terraform plan -replace="azurerm_public_ip.main"
 
 ---
 
-### 📝 Etape 7.2.3 - Utiliser `taint` (legacy) pour comprendre l'historique
+### 📝 Etape 7.2.3 - Utiliser `taint` (legacy) pour conserver l'historique
 
 Certaines equipes utilisent encore `terraform taint`.
 
@@ -77,25 +66,61 @@ Certaines equipes utilisent encore `terraform taint`.
 1. Marquez une ressource comme "a recreer":
 
 ```bash
-terraform taint azurerm_network_interface.main
+terraform taint azurerm_virtual_network.vnet
 ```
 
 2. Lancez `terraform plan` puis `terraform apply`.
 3. Si besoin, annulez avant apply avec:
 
 ```bash
-terraform untaint azurerm_network_interface.main
+terraform untaint azurerm_virtual_network.vnet
 ```
-
-**Question de reflexion :**
-- Pourquoi `taint` est moins lisible dans un workflow d'equipe qu'un `-replace` porte directement dans la commande de plan ?
 
 ---
 
 ## 🗂️ Partie 7.3 - Laboratoire des erreurs Terraform frequentes
 
-Dans cette partie, vous allez **reproduire** puis **corriger** les erreurs les plus frequentes.
+Dans cette partie, vous allez **reproduire** puis **corriger** les erreurs les plus fréquentes. Limitez-vous à `terraform plan` pour tester et valider la correction. Il n'est pas nécessaire de déployer l'infrastructure.
 
+1. [Etude de case 7.3.1](tp7.3.1.zip)
+2. [Etude de case 7.3.2](tp7.3.2.zip)
+3. [Etude de case 7.3.3](tp7.3.3.zip)
+4. [Etude de case 7.3.4](tp7.3.4.zip)
+5. [Etude de case 7.3.5](tp7.3.5.zip)
+
+<!---
+{::nomarkdown}
+<details><summary>Solution - Étape 7.3</summary>
+{:/nomarkdown}
+
+**7.3.1**
+
+Le cycle ne vient pas forcement d'une ressource "principale", mais parfois de references croisees dans des attributs secondaires (ici des `tags`).
+
+```hcl
+resource "azurerm_network_security_group" "app" {
+  # ...
+  tags = merge(local.common_tags, {
+    route_table_marker = azurerm_route_table.app.name
+  })
+}
+
+resource "azurerm_route_table" "app" {
+  # ...
+  tags = merge(local.common_tags, {
+    nsg_marker = azurerm_network_security_group.app.name
+  })
+}
+```
+
+`azurerm_network_security_group.app` depend de `azurerm_route_table.app` et `azurerm_route_table.app` depend de `azurerm_network_security_group.app`. Terraform ne peut pas ordonner la creation du graphe -> `Error: Cycle`
+
+Comment corriger : Remplacer les références par une valeur stable (variable/local/chaine statique).
+
+{::nomarkdown}
+</details>
+{:/nomarkdown}
+-->
 ---
 
 ### 📝 Etape 7.3.1 - Erreur `Cycle: ...`
