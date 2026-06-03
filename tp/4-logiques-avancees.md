@@ -52,7 +52,6 @@ Avant d'écrire une seule ligne de code, réfléchissez au **contrat du module**
 5. Créez `outputs.tf`pour exposer les informations utiles.
 6. Générez votre **contrat du module** dans `README.md`.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.1</summary>
 {:/nomarkdown}
@@ -135,7 +134,6 @@ output "nsg_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -152,7 +150,6 @@ Après la refactorisation tester le cycle Terraform pour créer toutes les resso
 **Questions de réflexion :**
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.1.3</summary>
 {:/nomarkdown}
@@ -192,7 +189,6 @@ output "nsg_staging_id" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
