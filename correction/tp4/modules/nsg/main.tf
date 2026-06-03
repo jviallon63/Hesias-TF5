@@ -3,8 +3,12 @@ resource "azurerm_network_security_group" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
 
+  # { name = "allow-http",  access = "Allow", protocol = "Tcp", port = "80" }
   dynamic "security_rule" {
-    for_each = { for idx, rule in var.security_rules : rule.name => merge(rule, { priority = 100 + idx * 10 }) }
+    for_each = { 
+      for idx, rule in var.security_rules
+        rule.name => merge(rule, { priority = 100 + idx * 10 })
+      }
     iterator = rule
     content {
       name                       = rule.key

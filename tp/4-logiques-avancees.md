@@ -222,7 +222,6 @@ dynamic "security_rule" {
 - Comment générer automatiquement une priorité unique pour chaque règle à partir de son index ?
 - Avec le module et le dynamic block vous pouvez facilement ajouter un environnement `dev`.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.2.4</summary>
 {:/nomarkdown}
@@ -276,7 +275,6 @@ module "nsg" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
