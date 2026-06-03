@@ -151,7 +151,7 @@ Après la refactorisation tester le cycle Terraform pour créer toutes les resso
 - Comment accéder à un output du module depuis le `main.tf` appelant ?
 
 {::nomarkdown}
-<details><summary>Solution - Étape 4.1.3</summary>
+<details><summary>Solution - Étape 4.1.2</summary>
 {:/nomarkdown}
 
 `staging/main.tf` :
