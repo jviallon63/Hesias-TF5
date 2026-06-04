@@ -249,6 +249,4 @@ Comment corriger :
 {::nomarkdown}
 </details>
 {:/nomarkdown}
-
-
 -->
