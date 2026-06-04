@@ -129,7 +129,7 @@ Comment corriger : Remplacer les références par une valeur stable (variable/lo
 
 L'erreur `Invalid count argument` apparait quand Terraform ne peut pas calculer `count` au moment du plan.
 
-Dans ce cas, `count` depend de `var.enable_storage_lock` qui vaut "true" par défaut, la variable est initialisé donc elle existe. Count dépende en plus de `azurerm_storage_account.logs.primary_blob_endpoint`, `primary_blob_endpoint` est un attribut exporté automatiquement aprés la création du storage_account. Au moment du plan l'attribut n'existe pas et ne peux pas être utilisé dans le count.
+Dans ce cas, `count` depend de `var.enable_storage_lock` qui vaut "true" par défaut, la variable est initialisé donc elle existe. Count dépend en plus de `azurerm_storage_account.logs.primary_blob_endpoint`, `primary_blob_endpoint` est un attribut exporté automatiquement aprés la création du storage_account. Au moment du plan l'attribut n'existe pas et ne peux pas être utilisé dans le count.
 
 ```hcl
 resource "azurerm_management_lock" "storage_delete_protection" {
