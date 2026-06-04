@@ -150,145 +150,68 @@ resource "azurerm_resource_group" "main" {
 
 ---
 
-## 🗂️ Exercice 4 - Conditions ternaires et création conditionnelle
+## 🗂️ Exercice 3 - Conditions ternaires et création conditionnelle
 
 ### 🧩 Problème
 
-En environnement réel, on ne déploie pas toujours les mêmes ressources partout. Par exemple, on veut un Bastion en production mais pas en dev, ou une SKU différente selon l'environnement. Vous allez utiliser l'opérateur ternaire de Terraform (`condition ? valeur_si_vrai : valeur_si_faux`) pour piloter ce comportement.
+En environnement réel, on ne déploie pas toujours les mêmes options partout. Dans cet exercice, vous allez explorer deux usages complémentaires :
 
----
-
-### 📝 Étape 4.1 - Utiliser un ternaire pour adapter la configuration
-
-Créez un dossier `tp-bonus-conditions/` avec `providers.tf`, `variables.tf`, `main.tf`.
+1. Conditionner la création d'une ressource avec `count`.
+2. Conditionner la valeur d'un attribut avec un opérateur ternaire.
 
 **Ce que vous devez faire :**
 
-1. Déclarez une variable `environment` (`dev`, `staging`, `prod`).
-2. Créez un Resource Group.
-3. Créez une IP publique avec une SKU calculée par ternaire : `Standard` en `prod`, `Basic` sinon.
-4. Ajoutez un tag `critical = "yes"` en prod et `critical = "no"` sinon, via ternaire.
+1. Vous allez créer 3 resources `azurerm_resource_group`, `azurerm_storage_account` et `azurerm_storage_container`. Le nom du container sera app.
+2. Ajouter au moins une variable à votre projet : `environment` avec `dev` comme valeur par défaut.
+3. Vous appliquer la bonne pratique terraform en tagguant `azurerm_resource_group` et `azurerm_storage_account` avec `managedBy` et `environment`
+4. VOus ajoutez un tag `critical = false` à votre liste.
+5. Assurez vous que le projet fonctionne avec `terraform plan`
 
-> 💡 Le ternaire est une expression : il peut être utilisé dans n'importe quel attribut Terraform (`name`, `sku`, `tags`, `locals`, etc.).
+**Ajouter les formes conditonnelles :**
+
+1. Si l'environnement est `prod` vous allez créer un second `azurerm_storage_container` avec le nom `logs`. On n'utilise pas de list ou map ici. Les bloc pour créer les container sont dupliqué.
+2. Si l'environnement est `prod` le tag `critical` doit avoir pour valeur `true`
+3. Ajoutez un output pour affiche le nom du container **logs**
+4. Assurez vous que le projet fonctionne avec `terraform plan`. Vérifiez les ressources et attributs créés pour la dév
+5. Faites de même avec `terraform plan -var="environment=prod"`
 
 <!---
 {::nomarkdown}
-<details><summary>Solution - Étape 4.1</summary>
+<details><summary>Solution - Étape 3.1</summary>
 {:/nomarkdown}
 
-`variables.tf` :
+`output.tf` :
 
 ```hcl
-variable "environment" {
-  type        = string
-  description = "Environnement cible (dev, staging, prod)"
-
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "environment doit être dev, staging ou prod."
-  }
+output "logs_container_name" {
+  description = "Nom du container logs (null hors prod)"
+  value       = var.environment == "prod" ? azurerm_storage_container.logs[0].name : null
 }
 ```
 
 `main.tf` :
 
 ```hcl
-resource "azurerm_resource_group" "main" {
-  name     = "rg-bonus-${var.environment}"
-  location = "West Europe"
+locals {
+  tag = merge(
+    {
+      managed_by = "terraform"
+      env        = var.environment
+    },
+    {
+      critical = var.environment == "prod" ? "true" : "false"
+    }
+  )
 }
 
-resource "azurerm_public_ip" "main" {
-  name                = "pip-bonus-${var.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  allocation_method   = "Static"
-  sku                 = var.environment == "prod" ? "Standard" : "Basic"
+...
 
-  tags = {
-    environment = var.environment
-    critical    = var.environment == "prod" ? "yes" : "no"
-  }
-}
-```
+resource "azurerm_storage_container" "logs" {
+  count = var.environment == "prod" ? 1 : 0
 
-{::nomarkdown}
-</details>
-{:/nomarkdown}
--->
-
----
-
-### 📝 Étape 4.2 - Créer une ressource uniquement si condition vraie (if/else)
-
-Dans le même projet, ajoutez une variable booléenne `enable_bastion` et créez un Bastion Host uniquement si elle vaut `true`.
-
-**Ce que vous devez faire :**
-
-1. Déclarez `enable_bastion` (bool) avec `false` par défaut.
-2. Créez une ressource `azurerm_subnet` nommée `AzureBastionSubnet` seulement si `enable_bastion = true`.
-3. Créez la ressource `azurerm_bastion_host` avec le même principe.
-4. Utilisez un output ternaire pour afficher un message clair selon que le Bastion est créé ou non.
-
-> ⚠️ Terraform n'a pas de bloc `if {}` autour des ressources. Le "if/else" se fait via `count` (0/1) ou `for_each` conditionnel.
-
-**Questions de réflexion :**
-- Pourquoi `count = var.enable_bastion ? 1 : 0` est-il une forme de if/else ?
-- Quelle différence entre conditionner une ressource (avec `count`) et conditionner un attribut (avec un ternaire) ?
-
-<!---
-{::nomarkdown}
-<details><summary>Solution - Étape 4.2</summary>
-{:/nomarkdown}
-
-`variables.tf` (ajout) :
-
-```hcl
-variable "enable_bastion" {
-  type        = bool
-  description = "Active ou non le déploiement du Bastion"
-  default     = false
-}
-```
-
-`main.tf` (extrait) :
-
-```hcl
-resource "azurerm_virtual_network" "main" {
-  name                = "vnet-bonus-${var.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  address_space       = ["10.20.0.0/16"]
-}
-
-resource "azurerm_subnet" "bastion" {
-  count                = var.enable_bastion ? 1 : 0
-  name                 = "AzureBastionSubnet"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.20.1.0/24"]
-}
-
-resource "azurerm_bastion_host" "main" {
-  count               = var.enable_bastion ? 1 : 0
-  name                = "bas-bonus-${var.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-
-  ip_configuration {
-    name                 = "configuration"
-    subnet_id            = azurerm_subnet.bastion[0].id
-    public_ip_address_id = azurerm_public_ip.main.id
-  }
-}
-```
-
-`outputs.tf` :
-
-```hcl
-output "bastion_status" {
-  description = "Etat du bastion"
-  value       = var.enable_bastion ? "Bastion deploye" : "Bastion non deploye"
+  name                  = "logs"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
 }
 ```
 
@@ -299,7 +222,7 @@ output "bastion_status" {
 
 ---
 
-## 🗂️ Exercice 5 - Protéger et contrôler le cycle de vie avec `lifecycle`
+## 🗂️ Exercice 4 - Protéger et contrôler le cycle de vie avec `lifecycle`
 
 ### 🧩 Problème
 
@@ -307,67 +230,22 @@ Par défaut, Terraform est libre de **détruire et recréer** n'importe quelle r
 
 ---
 
-### 📝 Étape 5.1 - `prevent_destroy` : le filet de sécurité
+### 📝 Étape 4.1 - `prevent_destroy` : le filet de sécurité
 
-Créez un dossier `tp-bonus-lifecycle/`. Déployez un PostgreSQL Flexible Server (vous pouvez réutiliser le code de l'exercice 1) et ajoutez `prevent_destroy = true` sur le serveur et sur son Resource Group.
+Créez un nouveau projet qui déploie une base de données PostgreSQL Flexible Server et ajoutez `prevent_destroy = true` sur le serveur et sur son Resource Group. Utiliser le code [ici](lifecycle_prevent_destroy.zip)
 
 **Ce que vous devez faire :**
 
 1. Ajoutez un bloc `lifecycle { prevent_destroy = true }` sur `azurerm_postgresql_flexible_server` et sur `azurerm_resource_group`.
 2. Tentez un `terraform destroy` et observez l'erreur.
 3. Tentez de changer la `location` du Resource Group (ce qui forcerait une recreation) et observez le comportement au `plan`.
+4. Supprimez `prevent_destroy` sur `azurerm_resource_group` et essayez d'appliquer la modification de la location
 
 > 💡 `prevent_destroy` protège **uniquement contre les destructions explicites via Terraform**. Il ne protège pas contre une suppression manuelle depuis le portail Azure ou l'Azure CLI.
 
-<!---
-{::nomarkdown}
-<details><summary>Solution - Étape 5.1</summary>
-{:/nomarkdown}
-
-```hcl
-resource "azurerm_resource_group" "db" {
-  name     = "rg-bonus-lifecycle"
-  location = "West Europe"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "azurerm_postgresql_flexible_server" "main" {
-  name                   = "psql-bonus-lifecycle"
-  resource_group_name    = azurerm_resource_group.db.name
-  location               = azurerm_resource_group.db.location
-  version                = "16"
-  administrator_login    = "psqladmin"
-  administrator_password = random_password.admin.result
-  zone                   = "1"
-  storage_mb             = 32768
-  sku_name               = "B_Standard_B1ms"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-```
-
-`terraform destroy` retourne :
-```
-Error: Instance cannot be destroyed
-  on main.tf line X, in resource "azurerm_postgresql_flexible_server" "main":
-  lifecycle {
-    prevent_destroy = true
-  }
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
--->
-
 ---
 
-### 📝 Étape 5.2 - `ignore_changes` : survivre à la dérive
+### 📝 Étape 4.2 - `ignore_changes` : survivre à la dérive
 
 Dans beaucoup d'organisations, une **Azure Policy** applique automatiquement des tags sur toutes les ressources. Résultat : à chaque `terraform plan`, Terraform détecte une différence sur les tags et veut les écraser. Le cycle est sans fin.
 
@@ -408,46 +286,3 @@ resource "azurerm_resource_group" "app" {
 </details>
 {:/nomarkdown}
 -->
-
----
-
-### 📝 Étape 5.3 - `create_before_destroy` : zéro downtime
-
-Pour certaines ressources (certificats, règles de sécurité), Terraform doit d'abord créer la nouvelle version avant de supprimer l'ancienne pour éviter une interruption de service.
-
-**Ce que vous devez faire :**
-
-1. Ajoutez un NSG avec une règle dans votre projet.
-2. Activez `create_before_destroy = true` sur le NSG.
-3. Modifiez le nom du NSG (ce qui force une recreation) et observez l'ordre des opérations dans le `plan` : `(+) create` apparaît avant `(-) destroy`.
-
-<!---
-{::nomarkdown}
-<details><summary>Solution - Étape 5.3</summary>
-{:/nomarkdown}
-
-```hcl
-resource "azurerm_network_security_group" "app" {
-  name                = "nsg-bonus-app-v2"   # changement de nom = recreation
-  location            = azurerm_resource_group.app.location
-  resource_group_name = azurerm_resource_group.app.name
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-```
-
-`terraform plan` affichera :
-```
-# azurerm_network_security_group.app must be replaced
-+/- resource "azurerm_network_security_group" "app" {
-      # (create before destroy)
-    }
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
--->
----
