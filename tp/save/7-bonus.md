@@ -48,7 +48,7 @@ Vous allez maintenant créer un second projet pour récupérer le secret stocké
 
 ---
 
-## 🗂️ Exercice 3 - Refactoriser sans détruire avec `moved`
+## 🗂️ Exercice 2 - Refactoriser sans détruire avec `moved`
 
 ### 🧩 Problème
 
@@ -56,62 +56,41 @@ En production, renommer une ressource Terraform (changer son label, la déplacer
 
 ---
 
-### 📝 Étape 3.1 - Situation initiale
+### 📝 Étape 2.1 - Situation initiale
 
-Créez un dossier `tp-bonus-moved/` avec ce `main.tf` de départ :
-
-```hcl
-resource "azurerm_resource_group" "rg" {
-  name     = "rg-bonus-moved"
-  location = "West Europe"
-}
-```
+Créez un nouveau projet terraform avec uniquement un `main.tf` qui créé un ressource groupe nommé `rg`
 
 Appliquez la config pour créer le Resource Group.
 
 ---
 
-### 📝 Étape 3.2 - Renommer sans détruire
+### 📝 Étape 2.2 - Renommer sans détruire
 
-Vous décidez que le label `rg` n'est pas assez explicite et souhaitez le renommer en `main`. Normalement Terraform voudrait détruire `azurerm_resource_group.rg` et créer `azurerm_resource_group.main`.
+Vous décidez que le label `rg` n'est pas assez explicite et souhaitez le renommer en `main.tf`. Normalement Terraform voudrait détruire `azurerm_resource_group.rg` et créer `azurerm_resource_group.main`.
 
 **Ce que vous devez faire :**
 
-1. Renommez le label dans `main.tf` : `resource "azurerm_resource_group" "main"`.
-2. Ajoutez un bloc `moved` dans un fichier `moved.tf` pour indiquer la migration.
-3. Lancez `terraform plan` et observez qu'aucune destruction n'est prévue.
+1. Renommez votre ressource groupe dans `main.tf`
+2. Ajoutez un bloc `moved` pour indiquer la migration.
+3. Validez avec `terraform plan`
 
 > 💡 Un bloc `moved` indique juste une migration d'adresse dans le state. **Il ne crée, modifie ni détruit rien dans Azure.** Il peut être supprimé une fois que toute l'équipe a appliqué le plan de migration.
 
 <!---
 {::nomarkdown}
-<details><summary>Solution - Étape 3.2</summary>
+<details><summary>Solution - Étape 2.2</summary>
 {:/nomarkdown}
-
-`main.tf` après refactorisation :
 
 ```hcl
 resource "azurerm_resource_group" "main" {
   name     = "rg-bonus-moved"
-  location = "West Europe"
+  location = "westeurope"
 }
-```
 
-`moved.tf` :
-
-```hcl
 moved {
   from = azurerm_resource_group.rg
   to   = azurerm_resource_group.main
 }
-```
-
-`terraform plan` doit afficher :
-```
-# azurerm_resource_group.rg has moved to azurerm_resource_group.main
-  resource "azurerm_resource_group" "main" { ... }
-
-Plan: 0 to add, 0 to change, 0 to destroy.
 ```
 
 {::nomarkdown}
@@ -121,7 +100,7 @@ Plan: 0 to add, 0 to change, 0 to destroy.
 
 ---
 
-### 📝 Étape 3.3 - Déplacer une ressource dans un module
+### 📝 Étape 2.3 - Déplacer une ressource dans un module
 
 Le bloc `moved` fonctionne aussi pour déplacer une ressource hors d'un module ou vers un module. Imaginez que vous souhaitez maintenant encapsuler le Resource Group dans un module `modules/rg`.
 
@@ -129,29 +108,38 @@ Le bloc `moved` fonctionne aussi pour déplacer une ressource hors d'un module o
 
 1. Créez `modules/rg/main.tf` avec la ressource `azurerm_resource_group`.
 2. Remplacez la ressource directe dans `main.tf` par un appel de module.
-3. Ajoutez un bloc `moved` de `azurerm_resource_group.main` vers `module.rg.azurerm_resource_group.main`.
+3. Ajoutez un bloc `moved` pour déplacer le ressource groupe local au projet dans votre module.
 
 <!---
 {::nomarkdown}
-<details><summary>Solution - Étape 3.3</summary>
+<details><summary>Solution - Étape 2.3</summary>
 {:/nomarkdown}
-
-`moved.tf` :
-
-```hcl
-moved {
-  from = azurerm_resource_group.main
-  to   = module.rg.azurerm_resource_group.main
-}
-```
 
 `main.tf` :
 
 ```hcl
 module "rg" {
   source   = "./modules/rg"
+}
+
+moved {
+  from = azurerm_resource_group.main
+  to   = module.rg.azurerm_resource_group.main
+}
+```
+
+
+`modules/rg/main.tf` :
+
+```hcl
+resource "azurerm_resource_group" "main" {
   name     = "rg-bonus-moved"
-  location = "West Europe"
+  location = "westeurope"
+
+  tags = {
+    environment = "demo"
+    managed_by  = "terraform"
+  }
 }
 ```
 
