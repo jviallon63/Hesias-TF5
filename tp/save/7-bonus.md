@@ -5,131 +5,46 @@ title: "TP Bonus - Aller plus loin avec Terraform"
 
 # 🎉 Contexte
 
-Vous avez fini les TP principaux ? Bravo. Ce TP bonus regroupe **5 exercices indépendants** pour explorer des fonctionnalités de Terraform et du provider `azurerm` qui n'ont pas été abordées. Ils peuvent être réalisés dans n'importe quel ordre. Chaque exercice est autonome et peut être déposé dans un dossier dédié.
+Vous avez fini les TP principaux ? Bravo. Ce TP bonus regroupe plusieurs **exercices indépendants** pour explorer des fonctionnalités de Terraform et du provider `azurerm` qui n'ont pas été abordées. Ils peuvent être réalisés dans n'importe quel ordre. Chaque exercice est autonome et peut être déposé dans un dossier dédié.
 
----—
+---
 
-## 🗂️ Exercice 1 - Base de données PostgreSQL avec mot de passe aléatoire
+## 🗂️ Exercice 1 - Azure Key Vault avec create_kv et use_kv
 
 ### 🧩 Problème
 
-Votre équipe doit déployer une base de données **Azure PostgreSQL Flexible Server**. Le mot de passe administrateur ne doit jamais être écrit en clair dans le code ou dans un `.tfvars`. Vous allez utiliser le provider **`random`** pour le générer automatiquement à chaque déploiement initial, puis le stabiliser entre les `apply`.
+Il est recommandé de stocker les secrets dans un coffre fort externe pour une meilleure sécurité. Dans ce TP vous allez créer 2 projets distinct : 
+
+1. `create_kv`: crée le Key Vault, génère un mot de passe aléatoire, puis le stocke dans un secret.
+2. `use_kv`: lit le Key Vault et le secret avec des data sources Azure, puis expose la valeur en output `sensitive`.
 
 ---
 
-### 📝 Étape 1.1 - Configurer les deux providers
-
-Créez un dossier `tp-bonus-postgres/` avec un `providers.tf`. Ce fichier doit déclarer **deux providers** :
-- `azurerm` (comme d'habitude)
-- `random` (source : `hashicorp/random`)
-
-> 💡 Vous pouvez déclarer plusieurs providers dans le même bloc `terraform { required_providers { ... } }`.
-
-<!---
-{::nomarkdown}
-<details><summary>Solution - Étape 1.1</summary>
-{:/nomarkdown}
-
-```hcl
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {}
-  subscription_id = var.subscription_id
-}
-
-provider "random" {}
-```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
--->
-
----
-
-### 📝 Étape 1.2 - Générer le mot de passe
-
-Dans `main.tf`, utilisez la ressource `random_password` pour générer un mot de passe de **16 caractères minimum**, avec des majuscules, minuscules, chiffres et caractères spéciaux. Stockez-le ensuite dans un `azurerm_key_vault_secret`.
-
-> ⚠️ Une ressource `random_password` génère sa valeur **une seule fois** lors du premier `apply`. Les `apply` suivants ne la régénèrent pas — sauf si vous forcez la re-création avec `terraform apply -replace="random_password.admin"`.
+### 📝 Étape 1.1 - Créer le projet create_kv
 
 **Ce que vous devez faire :**
 
-1. Déclarez une ressource `random_password` avec les contraintes souhaitées.
-2. Référencez `random_password.<nom>.result` comme mot de passe administrateur du serveur PostgreSQL.
-3. Ajoutez un output de type `sensitive = true` pour afficher le mot de passe après le premier déploiement.
-
-> 💡 Consultez la documentation : [registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password)
-
-<!---
-{::nomarkdown}
-<details><summary>Solution - Étape 1.2</summary>
-{:/nomarkdown}
-
-```hcl
-resource "random_password" "admin" {
-  length           = 20
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-  min_upper        = 2
-  min_lower        = 2
-  min_numeric      = 2
-  min_special      = 2
-}
-
-resource "azurerm_resource_group" "postgres" {
-  name     = "rg-bonus-postgres"
-  location = "West Europe"
-}
-
-resource "azurerm_postgresql_flexible_server" "main" {
-  name                   = "psql-bonus-${random_password.admin.id}"
-  resource_group_name    = azurerm_resource_group.postgres.name
-  location               = azurerm_resource_group.postgres.location
-  version                = "16"
-  administrator_login    = "psqladmin"
-  administrator_password = random_password.admin.result
-  zone                   = "1"
-
-  storage_mb   = 32768
-  sku_name     = "B_Standard_B1ms"
-}
-
-output "admin_password" {
-  description = "Mot de passe administrateur PostgreSQL"
-  value       = random_password.admin.result
-  sensitive   = true
-}
-```
-
-> Pour afficher la valeur d'un output `sensitive` :
-> ```bash
-> terraform output -raw admin_password
-> ```
-
-{::nomarkdown}
-</details>
-{:/nomarkdown}
--->
+1. Créez un dossier `create_kv/` avec la structure standard d'un projet terraform.
+2. Déclarer les providers `azurerm` et `random`.
+3. Vous allez générer un mot de passe avec `random_password`.
+4. Créer les ressources Azure nécessaire pour le **key vault**
+- Resource Group
+- `azurerm_key_vault` qui créé la ressource Azure Key Vault
+- `azurerm_key_vault_access_policy` pour authoriser votre compte à accéder aux vault. Utiliser une datasource pour récupérer l'id de votre compte personnel `azurerm_client_config`.
+- `azurerm_key_vault_secret` qui stocke le mot de passe généré.
 
 ---
 
-### 💡 Pour aller encore plus loin
+### 📝 Étape 1.2 - Créer le projet use_kv
 
-- Stockez le mot de passe dans un **Azure Key Vault** avec `azurerm_key_vault_secret` pour éviter de le lire en clair dans les outputs.
-- Ajoutez une règle de firewall `azurerm_postgresql_flexible_server_firewall_rule` pour n'autoriser que votre IP.
+Vous allez maintenant créer un second projet pour récupérer le secret stocké.
+
+**Ce que vous devez faire :**
+
+1. Créez un dossier `use_kv/` avec la structure standard d'un projet terraform.
+2. Déclarer le provider `azurerm`.
+3. Utiliser les datasource `azurerm_key_vault` et `azurerm_key_vault_secret` pour récupérer le secret
+5. Exposer le secret avec `sensitive = true`.
 
 ---
 
