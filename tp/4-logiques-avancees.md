@@ -300,7 +300,6 @@ Le `shared/main.tf` actuel déclare deux ressources `azurerm_subnet` séparées 
 - Pourquoi il est préférable de gérer la liste des subnets en tant que `variables` plutôt qu'en `locals` ?
 - Supprimé le subnet `staging`. Que ce passe t'il ? Pourquoi ? 
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.3.1</summary>
 {:/nomarkdown}
@@ -347,7 +346,6 @@ output "snet_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -369,7 +367,6 @@ Avant de commencer, détruisez les ressources du projet `shared/`. Vous allez re
 - Quelle est la différence en `list` et `map` ?
 - Dans quel cas `count` doit être utilisé ?
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 4.3.2</summary>
 {:/nomarkdown}
@@ -419,7 +416,6 @@ output "snet_name" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
