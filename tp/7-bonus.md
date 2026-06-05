@@ -76,7 +76,6 @@ Vous décidez que le label `rg` n'est pas assez explicite et souhaitez le renomm
 
 > 💡 Un bloc `moved` indique juste une migration d'adresse dans le state. **Il ne crée, modifie ni détruit rien dans Azure.** Il peut être supprimé une fois que toute l'équipe a appliqué le plan de migration.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.2</summary>
 {:/nomarkdown}
@@ -96,7 +95,6 @@ moved {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -110,7 +108,6 @@ Le bloc `moved` fonctionne aussi pour déplacer une ressource hors d'un module o
 2. Remplacez la ressource directe dans `main.tf` par un appel de module.
 3. Ajoutez un bloc `moved` pour déplacer le ressource groupe local au projet dans votre module.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 2.3</summary>
 {:/nomarkdown}
@@ -146,7 +143,6 @@ resource "azurerm_resource_group" "main" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -175,7 +171,6 @@ En environnement réel, on ne déploie pas toujours les mêmes options partout. 
 4. Assurez vous que le projet fonctionne avec `terraform plan`. Vérifiez les ressources et attributs créés pour la dév
 5. Faites de même avec `terraform plan -var="environment=prod"`
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 3.1</summary>
 {:/nomarkdown}
@@ -218,7 +213,6 @@ resource "azurerm_storage_container" "logs" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
 
 ---
 
@@ -259,7 +253,6 @@ Dans beaucoup d'organisations, une **Azure Policy** applique automatiquement des
 4. Ajoutez `ignore_changes = [tags]` dans le bloc `lifecycle` du Resource Group.
 5. Relancez `terraform plan` : la dérive sur les tags doit être ignorée.
 
-<!---
 {::nomarkdown}
 <details><summary>Solution - Étape 5.2</summary>
 {:/nomarkdown}
@@ -285,4 +278,3 @@ resource "azurerm_resource_group" "app" {
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
