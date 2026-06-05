@@ -161,17 +161,17 @@ En environnement réel, on ne déploie pas toujours les mêmes options partout. 
 
 **Ce que vous devez faire :**
 
-1. Vous allez créer 3 resources `azurerm_resource_group`, `azurerm_storage_account` et `azurerm_storage_container`. Le nom du container sera app.
+1. Vous allez créer 3 resources `azurerm_resource_group`, `azurerm_storage_account` et `azurerm_storage_container`. Le nom du container sera **app**.
 2. Ajouter au moins une variable à votre projet : `environment` avec `dev` comme valeur par défaut.
 3. Vous appliquer la bonne pratique terraform en tagguant `azurerm_resource_group` et `azurerm_storage_account` avec `managedBy` et `environment`
-4. VOus ajoutez un tag `critical = false` à votre liste.
+4. Vous ajoutez un tag `critical = false` à votre liste.
 5. Assurez vous que le projet fonctionne avec `terraform plan`
 
 **Ajouter les formes conditonnelles :**
 
-1. Si l'environnement est `prod` vous allez créer un second `azurerm_storage_container` avec le nom `logs`. On n'utilise pas de list ou map ici. Les bloc pour créer les container sont dupliqué.
+1. Si l'environnement est `prod` vous allez créer un second `azurerm_storage_container` avec le nom **logs**. On n'utilise pas de liste ou map ici. Les blocs pour créer les container sont dupliqués.
 2. Si l'environnement est `prod` le tag `critical` doit avoir pour valeur `true`
-3. Ajoutez un output pour affiche le nom du container **logs**
+3. Ajoutez un output pour afficher le nom du container **logs**
 4. Assurez vous que le projet fonctionne avec `terraform plan`. Vérifiez les ressources et attributs créés pour la dév
 5. Faites de même avec `terraform plan -var="environment=prod"`
 
@@ -254,7 +254,7 @@ Dans beaucoup d'organisations, une **Azure Policy** applique automatiquement des
 **Ce que vous devez faire :**
 
 1. Déployez un Resource Group **sans tags** dans votre `main.tf`.
-2. Ajoutez manuellement un tag `managed-by = "azure-policy"` depuis le portail Azure (ou Azure CLI).
+2. Ajoutez manuellement un tag `managed-by = "azure-policy"` depuis le portail Azure.
 3. Lancez `terraform plan` et observez que Terraform veut supprimer ce tag.
 4. Ajoutez `ignore_changes = [tags]` dans le bloc `lifecycle` du Resource Group.
 5. Relancez `terraform plan` : la dérive sur les tags doit être ignorée.
