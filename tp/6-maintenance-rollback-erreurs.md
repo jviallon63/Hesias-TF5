@@ -89,7 +89,6 @@ Dans cette partie, vous allez **reproduire** puis **corriger** les erreurs les p
 5. [Etude de case 6.2.5](tp6.2.5.zip)
 6. [Etude de case 6.2.6](tp6.2.6.zip)
 
-<!--
 {::nomarkdown}
 <details><summary>Solution - Étape 6.2.1</summary>
 {:/nomarkdown}
@@ -249,4 +248,3 @@ Comment corriger :
 {::nomarkdown}
 </details>
 {:/nomarkdown}
--->
